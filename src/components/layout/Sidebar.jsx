@@ -1,124 +1,114 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink } from 'react-router-dom';
 
-const nav = [
+const sections = [
   {
-    group: 'PARTNERS',
+    label: 'Main',
     items: [
-      { to: '/', label: 'Dashboard', icon: '▦' },
-      { to: '/partners', label: 'Partners', icon: '◈' },
-      { to: '/investors', label: 'Investors', icon: '◎' },
-      { to: '/families', label: 'Families', icon: '⬡' },
-    ],
+      { to: '/dashboard', label: 'Client Dashboard', icon: '▦' },
+      { to: '/partners', label: 'Partner Dashboard', icon: '◈' },
+    ]
   },
   {
-    group: 'DATA',
+    label: 'Clients',
     items: [
-      { to: '/commission', label: 'Commission', icon: '◇' },
-      { to: '/research', label: 'Research', icon: '◉' },
-      { to: '/reports', label: 'Client Reports', icon: '▤' },
-    ],
+      { to: '/investors', label: 'Investors', icon: '◉' },
+      { to: '/families', label: 'Families', icon: '⊕' },
+    ]
   },
   {
-    group: 'ADMIN',
+    label: 'Finance',
     items: [
-      { to: '/admin', label: 'Admin Controls', icon: '⚙' },
-    ],
+      { to: '/commission', label: 'Commission', icon: '◎' },
+      { to: '/client-reports', label: 'Client Reports', icon: '▤' },
+    ]
   },
-]
+  {
+    label: 'Tools',
+    items: [
+      { to: '/research', label: 'Research', icon: '◐' },
+      { to: '/admin-controls', label: 'Admin Controls', icon: '◧' },
+    ]
+  },
+];
+
+const activeStyle = {
+  background: 'rgba(44,74,62,0.08)',
+  color: 'var(--green)',
+  fontWeight: 500,
+};
+
+const itemStyle = {
+  display: 'flex', alignItems: 'center', gap: '10px',
+  padding: '10px 12px', borderRadius: '8px',
+  fontSize: '13px', fontWeight: 400, color: '#5a6a64',
+  cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
+  marginBottom: '2px', textDecoration: 'none',
+};
 
 export default function Sidebar() {
   return (
-    <aside
-      style={{ width: 220, backgroundColor: '#2C4A3E' }}
-      className="fixed left-0 top-0 h-screen flex flex-col overflow-y-auto z-40"
-    >
+    <aside style={{
+      width: '220px', background: '#fff',
+      borderRight: '1px solid var(--border)',
+      position: 'fixed', top: 0, left: 0, bottom: 0,
+      display: 'flex', flexDirection: 'column',
+      zIndex: 200,
+    }}>
       {/* Logo */}
-      <div className="px-6 pt-8 pb-6 flex items-center gap-2">
-        <span
-          style={{ fontFamily: "'Cormorant Garamond', serif", color: '#FAF8F4' }}
-          className="text-2xl font-semibold tracking-wide"
-        >
+      <div style={{
+        height: '60px', display: 'flex', alignItems: 'center',
+        padding: '0 24px', borderBottom: '1px solid var(--border)',
+        gap: '10px', flexShrink: 0,
+      }}>
+        <span style={{ fontFamily: 'var(--display-font)', fontSize: '22px', color: 'var(--charcoal)' }}>
           Niom
         </span>
-        <span
-          style={{
-            fontFamily: "'Jost', sans-serif",
-            fontSize: 9,
-            letterSpacing: '0.12em',
-            color: '#B8965A',
-            border: '1px solid #B8965A',
-            borderRadius: 3,
-            padding: '1px 5px',
-            fontWeight: 600,
-            lineHeight: '16px',
-          }}
-        >
-          ADMIN
-        </span>
+        <span style={{
+          fontFamily: 'var(--body-font)', fontSize: '10px',
+          letterSpacing: '0.18em', textTransform: 'uppercase',
+          color: 'var(--gold)', padding: '3px 8px',
+          border: '1px solid rgba(184,150,90,0.4)', borderRadius: '100px',
+        }}>Admin</span>
       </div>
 
-      {/* Nav groups */}
-      <nav className="flex-1 px-4 pb-8 flex flex-col gap-6">
-        {nav.map(({ group, items }) => (
-          <div key={group}>
-            <p
-              style={{
-                fontFamily: "'Jost', sans-serif",
-                fontSize: 10,
-                letterSpacing: '0.18em',
-                color: '#B8965A',
-                fontWeight: 600,
-                fontVariant: 'small-caps',
-                marginBottom: 6,
-                paddingLeft: 10,
-              }}
-            >
-              {group}
-            </p>
-            <div className="flex flex-col gap-0.5">
-              {items.map(({ to, label, icon }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={to === '/'}
-                  style={({ isActive }) => ({
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 10px',
-                    borderRadius: 7,
-                    fontFamily: "'Jost', sans-serif",
-                    fontSize: 13,
-                    fontWeight: isActive ? 500 : 400,
-                    color: '#FAF8F4',
-                    backgroundColor: isActive
-                      ? 'rgba(250,248,244,0.10)'
-                      : 'transparent',
-                    textDecoration: 'none',
-                    transition: 'background 0.15s',
-                    opacity: isActive ? 1 : 0.75,
-                  })}
-                  onMouseEnter={(e) => {
-                    if (!e.currentTarget.dataset.active) {
-                      e.currentTarget.style.backgroundColor = 'rgba(250,248,244,0.07)'
-                      e.currentTarget.style.opacity = '1'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!e.currentTarget.dataset.active) {
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                      e.currentTarget.style.opacity = '0.75'
-                    }
-                  }}
-                >
-                  <span style={{ fontSize: 14, opacity: 0.85 }}>{icon}</span>
-                  {label}
-                </NavLink>
-              ))}
+      {/* Nav sections */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 0' }}>
+        {sections.map(section => (
+          <div key={section.label} style={{ padding: '0 20px 24px' }}>
+            <div style={{
+              fontSize: '10px', textTransform: 'uppercase',
+              letterSpacing: '0.2em', color: 'var(--gold)',
+              fontWeight: 600, marginBottom: '10px', padding: '0 12px',
+            }}>
+              {section.label}
             </div>
+            {section.items.map(item => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                style={({ isActive }) => ({
+                  ...itemStyle,
+                  ...(isActive ? activeStyle : {}),
+                })}
+                onMouseEnter={e => {
+                  if (!e.currentTarget.getAttribute('aria-current')) {
+                    e.currentTarget.style.background = 'var(--sage)';
+                    e.currentTarget.style.color = 'var(--green)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!e.currentTarget.getAttribute('aria-current')) {
+                    e.currentTarget.style.background = '';
+                    e.currentTarget.style.color = '#5a6a64';
+                  }
+                }}
+              >
+                {item.label}
+              </NavLink>
+            ))}
           </div>
         ))}
-      </nav>
+      </div>
     </aside>
-  )
+  );
 }
