@@ -1,0 +1,29 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Layout from './components/layout/Layout'
+import Dashboard from './pages/Dashboard'
+import Partners from './pages/Partners'
+import Investors from './pages/Investors'
+import Families from './pages/Families'
+import Commission from './pages/Commission'
+import Research from './pages/Research'
+import AdminControls from './pages/AdminControls'
+import ClientReports from './pages/ClientReports'
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/partners" element={<Partners />} />
+          <Route path="/investors" element={<Investors />} />
+          <Route path="/families" element={<Families />} />
+          <Route path="/commission" element={<Commission />} />
+          <Route path="/research" element={<Research />} />
+          <Route path="/admin" element={<AdminControls />} />
+          <Route path="/reports" element={<ClientReports />} />
+        </Routes>
+      </Layout>
+    </BrowserRouter>
+  )
+}
