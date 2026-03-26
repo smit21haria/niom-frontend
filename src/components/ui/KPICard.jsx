@@ -8,15 +8,13 @@ export default function KPICard({ label, value, subtitle, to }) {
     <div
       onClick={() => clickable && navigate(to)}
       style={{
-        background: '#fff',
-        borderRadius: '16px',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow)',
-        padding: '24px',
-        flex: 1,
-        minWidth: 0,
+        background: '#fff', borderRadius: '16px',
+        border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
+        padding: '24px', flex: 1, minWidth: 0,
         cursor: clickable ? 'pointer' : 'default',
         transition: 'box-shadow 0.2s, transform 0.2s',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', textAlign: 'center',
       }}
       onMouseEnter={e => {
         if (clickable) {
@@ -30,18 +28,20 @@ export default function KPICard({ label, value, subtitle, to }) {
       }}
     >
       <div style={{
-        fontSize: '10px', textTransform: 'uppercase',
-        letterSpacing: '0.16em', color: 'var(--gold)',
+        fontSize: '11px', textTransform: 'uppercase',
+        letterSpacing: '0.18em', color: 'var(--gold)',
         fontWeight: 600, marginBottom: '12px',
       }}>{label}</div>
       <div style={{
-        fontFamily: 'var(--display-font)',
-        fontSize: '32px', fontWeight: 600,
-        color: 'var(--charcoal)', lineHeight: 1.1,
-        marginBottom: '6px',
+        fontFamily: 'var(--display-font)', fontSize: '34px',
+        fontWeight: 600, color: 'var(--charcoal)',
+        lineHeight: 1.1, flex: 1, display: 'flex',
+        alignItems: 'center',
       }}>{value}</div>
       {subtitle && (
-        <div style={{ fontSize: '12px', color: '#8a9e96' }}>{subtitle}</div>
+        <div style={{ fontSize: '12px', color: '#8a9e96', marginTop: '10px' }}>
+          {subtitle}
+        </div>
       )}
     </div>
   );
