@@ -6,18 +6,23 @@ const TREND_FILTERS = ['12M', '24M', '36M'];
 
 const sectionHead = {
   fontFamily: 'var(--display-font)',
-  fontSize: '20px',
+  fontSize: '22px',
   fontWeight: 600,
-  color: 'var(--charcoal)',
+  color: 'var(--green)',
+};
+
+const pillLabel = {
+  display: 'inline-block',
+  fontSize: '11px', textTransform: 'uppercase',
+  letterSpacing: '0.18em', color: 'var(--gold)', fontWeight: 600,
+  background: 'rgba(184,150,90,0.08)',
+  border: '1px solid rgba(184,150,90,0.25)',
+  padding: '4px 14px', borderRadius: '100px',
 };
 
 const tabHead = {
-  fontSize: '11px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.18em',
-  color: 'var(--gold)',
-  fontWeight: 600,
-  textAlign: 'center',
+  fontSize: '11px', textTransform: 'uppercase',
+  letterSpacing: '0.18em', color: 'var(--gold)', fontWeight: 600,
 };
 
 export default function Dashboard() {
@@ -27,18 +32,26 @@ export default function Dashboard() {
 
   return (
     <div>
+      {/* Page Title */}
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{
+          fontFamily: 'var(--display-font)', fontSize: '34px',
+          fontWeight: 600, color: 'var(--green)',
+        }}>Client Dashboard</h1>
+      </div>
+
       {/* KPI Cards */}
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '28px' }}>
         {[
-          { label: 'Total AUM', value: '₹0', sub: 'As of today', to: null },
-          { label: 'Total Invested', value: '₹0', sub: null },
+          { label: 'Total AUM', value: '₹0', sub: 'As of today' },
+          { label: 'Total Invested', value: '₹0', sub: '' },
           { label: 'Total Gain / Loss', value: '₹0', sub: 'XIRR: 0%' },
-          { label: 'Investors', value: '0', sub: null, to: '/investors' },
-          { label: 'Families', value: '0', sub: null, to: '/families' },
-          { label: 'SIP Book', value: '₹0', sub: null },
-          { label: 'New Leads', value: '0', sub: null, to: '/leads' },
+          { label: 'Investors', value: '0', sub: '', to: '/investors' },
+          { label: 'Families', value: '0', sub: '', to: '/families' },
+          { label: 'SIP Book', value: '₹0', sub: '' },
+          { label: 'New Leads', value: '0', sub: '', to: '/leads' },
         ].map(card => (
-          <KPICard key={card.label} label={card.label} value={card.value} subtitle={card.sub} to={card.to} />
+          <KPICard key={card.label} {...card} />
         ))}
       </div>
 
@@ -72,33 +85,38 @@ export default function Dashboard() {
             { label: 'SIP Purchase', value: '₹0', sub: '0 transactions' },
             { label: 'Redemption', value: '₹0', sub: '0 transactions' },
             { label: 'Rejection', value: '₹0', sub: '0 transactions' },
-            { label: 'New Investors', value: '0', sub: null },
+            { label: 'New Investors', value: '0', sub: '' },
             { label: 'New SIP Investments', value: '₹0', sub: '0 SIPs' },
           ].map((item, i) => (
             <div key={i} style={{
-              padding: '24px 16px',
+              padding: '24px 12px',
               borderRight: i < 5 ? '1px solid var(--border)' : 'none',
               textAlign: 'center',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'space-between',
+              minHeight: '110px',
             }}>
-              <div style={{ ...tabHead, marginBottom: '12px' }}>{item.label}</div>
+              <div style={{ ...tabHead }}>{item.label}</div>
               <div style={{
-                fontFamily: 'var(--display-font)', fontSize: '26px',
-                fontWeight: 600, color: 'var(--charcoal)', marginBottom: '6px',
+                fontFamily: 'var(--display-font)', fontSize: '32px',
+                fontWeight: 600, color: 'var(--charcoal)', lineHeight: 1,
               }}>{item.value}</div>
-              {item.sub && <div style={{ fontSize: '12px', color: '#9aaa9e' }}>{item.sub}</div>}
+              <div style={{ fontSize: '12px', color: '#9aaa9e', minHeight: '16px' }}>
+                {item.sub || ''}
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* AUM Chart */}
+      {/* AUM Growth Chart */}
       <div style={{
         background: '#fff', borderRadius: '16px',
         border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
         padding: '28px', marginBottom: '28px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-          <span style={sectionHead}>AUM Over Time</span>
+          <span style={sectionHead}>AUM Growth</span>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <div style={{
               display: 'flex', background: 'var(--sage)',
@@ -140,14 +158,7 @@ export default function Dashboard() {
       {/* AUM Breakdown */}
       <div style={{ marginBottom: '28px' }}>
         <div style={{ marginBottom: '16px' }}>
-          <span style={{
-            display: 'inline-block',
-            fontSize: '11px', textTransform: 'uppercase',
-            letterSpacing: '0.18em', color: 'var(--gold)', fontWeight: 600,
-            background: 'rgba(184,150,90,0.08)',
-            border: '1px solid rgba(184,150,90,0.25)',
-            padding: '4px 14px', borderRadius: '100px',
-          }}>AUM Breakdown</span>
+          <span style={pillLabel}>AUM Breakdown</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           {['By Category', 'By Subcategory', 'By AMC', 'By Fund Style'].map(label => (
@@ -155,7 +166,7 @@ export default function Dashboard() {
               background: '#fff', borderRadius: '16px',
               border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '24px',
             }}>
-              <div style={{ ...tabHead, textAlign: 'left', marginBottom: '16px' }}>{label}</div>
+              <div style={{ ...tabHead, marginBottom: '16px' }}>{label}</div>
               <div style={{
                 height: '200px', background: 'var(--sage)', borderRadius: '8px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -170,14 +181,7 @@ export default function Dashboard() {
       {/* SIP Breakdown */}
       <div style={{ marginBottom: '28px' }}>
         <div style={{ marginBottom: '16px' }}>
-          <span style={{
-            display: 'inline-block',
-            fontSize: '11px', textTransform: 'uppercase',
-            letterSpacing: '0.18em', color: 'var(--gold)', fontWeight: 600,
-            background: 'rgba(184,150,90,0.08)',
-            border: '1px solid rgba(184,150,90,0.25)',
-            padding: '4px 14px', borderRadius: '100px',
-          }}>SIP Breakdown</span>
+          <span style={pillLabel}>SIP Breakdown</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           {['By Category', 'By AMC'].map(label => (
@@ -185,7 +189,7 @@ export default function Dashboard() {
               background: '#fff', borderRadius: '16px',
               border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '24px',
             }}>
-              <div style={{ ...tabHead, textAlign: 'left', marginBottom: '16px' }}>{label}</div>
+              <div style={{ ...tabHead, marginBottom: '16px' }}>{label}</div>
               <div style={{
                 height: '200px', background: 'var(--sage)', borderRadius: '8px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -194,12 +198,11 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
-          {/* By Fund Style */}
           <div style={{
             background: '#fff', borderRadius: '16px',
             border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '24px',
           }}>
-            <div style={{ ...tabHead, textAlign: 'left', marginBottom: '16px' }}>By Fund Style</div>
+            <div style={{ ...tabHead, marginBottom: '16px' }}>By Fund Style</div>
             <div style={{
               height: '200px', background: 'var(--sage)', borderRadius: '8px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -207,21 +210,21 @@ export default function Dashboard() {
               <span style={{ fontSize: '12px', color: '#9aaa9e', fontStyle: 'italic' }}>Chart</span>
             </div>
           </div>
-          {/* SIPs Due This Week */}
+          {/* Alerts tab */}
           <div style={{
             background: '#fff', borderRadius: '16px',
-            border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '24px',
-            display: 'flex', flexDirection: 'column',
+            border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
+            padding: '24px', display: 'flex', flexDirection: 'column',
           }}>
-            <div style={{ ...tabHead, textAlign: 'left', marginBottom: '16px' }}>SIPs Due This Week</div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[1,2,3].map(i => (
+            <div style={{ ...tabHead, marginBottom: '16px' }}>SIPs Due This Week</div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {['No SIPs due this week'].map((msg, i) => (
                 <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: '12px',
+                  display: 'flex', alignItems: 'flex-start', gap: '12px',
                   padding: '12px 16px', borderRadius: '8px', background: 'var(--sage)',
                 }}>
-                  <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--gold)', flexShrink: 0 }} />
-                  <span style={{ fontSize: '13px', color: 'var(--charcoal)' }}>No SIPs due this week</span>
+                  <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--gold)', flexShrink: 0, marginTop: '4px' }} />
+                  <span style={{ fontSize: '13px', color: 'var(--charcoal)', lineHeight: 1.5 }}>{msg}</span>
                 </div>
               ))}
             </div>
@@ -229,12 +232,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Fund Intelligence — Top Schemes + Scheme Ratings */}
+      {/* Fund Intelligence */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '28px' }}>
-        {/* Top Schemes */}
         <div style={{
           background: '#fff', borderRadius: '16px',
-          border: '1px solid var(--border)', boxShadow: 'var(--shadow)', overflow: 'hidden',
+          border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
+          overflow: 'hidden',
         }}>
           <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
             <span style={sectionHead}>Top Schemes by AUM</span>
@@ -243,7 +246,11 @@ export default function Dashboard() {
             <thead>
               <tr>
                 {['Fund', 'AMC', 'AUM', 'Rating'].map(h => (
-                  <th key={h} style={{ padding: '10px 20px', textAlign: 'left', background: 'var(--sage)', ...tabHead }}>{h}</th>
+                  <th key={h} style={{
+                    padding: '10px 20px', textAlign: 'left',
+                    background: 'var(--sage)', ...tabHead,
+                    fontFamily: 'var(--body-font)',
+                  }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -262,39 +269,27 @@ export default function Dashboard() {
           </table>
         </div>
 
-        {/* Scheme Ratings */}
         <div style={{
           background: '#fff', borderRadius: '16px',
           border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
           padding: '24px', display: 'flex', flexDirection: 'column',
         }}>
-          <span style={{ ...sectionHead, marginBottom: '24px' }}>Scheme Ratings Distribution</span>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            {[
-              { label: '5 Star', pct: 0 },
-              { label: '4 Star', pct: 0 },
-              { label: '3 Star', pct: 0 },
-              { label: '2 Star', pct: 0 },
-              { label: '1 Star', pct: 0 },
-              { label: 'Not Rated', pct: 0 },
-            ].map(r => (
-              <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
-                <span style={{ fontSize: '12px', color: '#5a6a64', width: '64px', flexShrink: 0 }}>{r.label}</span>
+          <span style={{ ...sectionHead, marginBottom: '24px' }}>Scheme Ratings</span>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
+            {['5 Star', '4 Star', '3 Star', '2 Star', '1 Star', 'Not Rated'].map(r => (
+              <div key={r} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <span style={{ fontSize: '12px', color: '#5a6a64', width: '64px', flexShrink: 0 }}>{r}</span>
                 <div style={{ flex: 1, height: '10px', background: 'var(--sage)', borderRadius: '100px', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%', width: `${r.pct}%`,
-                    background: 'var(--green)', borderRadius: '100px',
-                    transition: 'width 0.4s ease',
-                  }} />
+                  <div style={{ height: '100%', width: '0%', background: 'var(--green)', borderRadius: '100px' }} />
                 </div>
-                <span style={{ fontSize: '12px', color: '#9aaa9e', width: '36px', textAlign: 'right' }}>{r.pct}%</span>
+                <span style={{ fontSize: '12px', color: '#9aaa9e', width: '36px', textAlign: 'right' }}>0%</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Top Investors + Top Families */}
+      {/* Top Investors + Families */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         {[
           { title: 'Top Investors', link: '/investors' },
@@ -302,7 +297,8 @@ export default function Dashboard() {
         ].map(({ title, link }) => (
           <div key={title} style={{
             background: '#fff', borderRadius: '16px',
-            border: '1px solid var(--border)', boxShadow: 'var(--shadow)', overflow: 'hidden',
+            border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
+            overflow: 'hidden',
           }}>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -317,7 +313,11 @@ export default function Dashboard() {
               <thead>
                 <tr>
                   {['Name', 'AUM', 'XIRR'].map(h => (
-                    <th key={h} style={{ padding: '10px 24px', textAlign: 'left', background: 'var(--sage)', ...tabHead }}>{h}</th>
+                    <th key={h} style={{
+                      padding: '10px 24px', textAlign: 'left',
+                      background: 'var(--sage)', ...tabHead,
+                      fontFamily: 'var(--body-font)',
+                    }}>{h}</th>
                   ))}
                 </tr>
               </thead>
