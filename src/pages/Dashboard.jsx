@@ -6,9 +6,9 @@ const TREND_FILTERS = ['12M', '24M', '36M'];
 
 const sectionHead = {
   fontFamily: 'var(--display-font)',
-  fontSize: '20px',
+  fontSize: '22px',
   fontWeight: 600,
-  color: 'var(--charcoal)',
+  color: 'var(--green)',
 };
 
 const tabHead = {
@@ -27,6 +27,14 @@ export default function Dashboard() {
 
   return (
     <div>
+      {/* Page Title */}
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{
+          fontFamily: 'var(--display-font)', fontSize: '34px',
+          fontWeight: 600, color: 'var(--green)',
+        }}>Client Dashboard</h1>
+      </div>
+
       {/* KPI Cards */}
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '28px' }}>
         {[
@@ -76,16 +84,25 @@ export default function Dashboard() {
             { label: 'New SIP Investments', value: '₹0', sub: '0 SIPs' },
           ].map((item, i) => (
             <div key={i} style={{
-              padding: '24px 16px',
+              padding: '28px 16px',
               borderRight: i < 5 ? '1px solid var(--border)' : 'none',
               textAlign: 'center',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: '10px',
             }}>
-              <div style={{ ...tabHead, marginBottom: '12px' }}>{item.label}</div>
               <div style={{
-                fontFamily: 'var(--display-font)', fontSize: '26px',
-                fontWeight: 600, color: 'var(--charcoal)', marginBottom: '6px',
+                fontSize: '11px', textTransform: 'uppercase',
+                letterSpacing: '0.18em', color: 'var(--gold)', fontWeight: 600,
+              }}>{item.label}</div>
+              <div style={{
+                fontFamily: 'var(--display-font)', fontSize: '34px',
+                fontWeight: 600, color: 'var(--charcoal)', lineHeight: 1,
               }}>{item.value}</div>
-              {item.sub && <div style={{ fontSize: '12px', color: '#9aaa9e' }}>{item.sub}</div>}
+              {item.sub && (
+                <div style={{ fontSize: '10px', color: '#9aaa9e', letterSpacing: '0.04em' }}>
+                  {item.sub}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -98,7 +115,7 @@ export default function Dashboard() {
         padding: '28px', marginBottom: '28px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-          <span style={sectionHead}>AUM Over Time</span>
+          <span style={sectionHead}>AUM Growth</span>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <div style={{
               display: 'flex', background: 'var(--sage)',
