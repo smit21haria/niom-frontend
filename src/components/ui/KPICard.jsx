@@ -11,10 +11,12 @@ export default function KPICard({ label, value, subtitle, to }) {
         background: '#fff', borderRadius: '16px',
         border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
         padding: '28px 20px', flex: 1, minWidth: 0,
+        minHeight: '160px',
         cursor: clickable ? 'pointer' : 'default',
         transition: 'box-shadow 0.2s, transform 0.2s',
         display: 'flex', flexDirection: 'column',
-        alignItems: 'center', textAlign: 'center', gap: '10px',
+        alignItems: 'center', textAlign: 'center',
+        justifyContent: 'space-between',
       }}
       onMouseEnter={e => {
         if (clickable) {
@@ -28,7 +30,7 @@ export default function KPICard({ label, value, subtitle, to }) {
       }}
     >
       <div style={{
-        fontSize: '11px', textTransform: 'uppercase',
+        fontSize: '12px', textTransform: 'uppercase',
         letterSpacing: '0.18em', color: 'var(--gold)',
         fontWeight: 600,
       }}>{label}</div>
@@ -36,11 +38,9 @@ export default function KPICard({ label, value, subtitle, to }) {
         fontFamily: 'var(--display-font)', fontSize: '34px',
         fontWeight: 600, color: 'var(--charcoal)', lineHeight: 1,
       }}>{value}</div>
-      {subtitle && (
-        <div style={{ fontSize: '10px', color: '#9aaa9e', letterSpacing: '0.04em' }}>
-          {subtitle}
-        </div>
-      )}
+      <div style={{ fontSize: '11px', color: '#9aaa9e', letterSpacing: '0.04em', minHeight: '14px' }}>
+        {subtitle || ''}
+      </div>
     </div>
   );
 }

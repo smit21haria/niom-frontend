@@ -91,7 +91,7 @@ export default function Dashboard() {
               alignItems: 'center', gap: '10px',
             }}>
               <div style={{
-                fontSize: '11px', textTransform: 'uppercase',
+                fontSize: '12px', textTransform: 'uppercase',
                 letterSpacing: '0.18em', color: 'var(--gold)', fontWeight: 600,
               }}>{item.label}</div>
               <div style={{
@@ -99,7 +99,7 @@ export default function Dashboard() {
                 fontWeight: 600, color: 'var(--charcoal)', lineHeight: 1,
               }}>{item.value}</div>
               {item.sub && (
-                <div style={{ fontSize: '10px', color: '#9aaa9e', letterSpacing: '0.04em' }}>
+                <div style={{ fontSize: '11px', color: '#9aaa9e', letterSpacing: '0.04em' }}>
                   {item.sub}
                 </div>
               )}
@@ -159,11 +159,10 @@ export default function Dashboard() {
         <div style={{ marginBottom: '16px' }}>
           <span style={{
             display: 'inline-block',
-            fontSize: '11px', textTransform: 'uppercase',
-            letterSpacing: '0.18em', color: 'var(--gold)', fontWeight: 600,
-            background: 'rgba(184,150,90,0.08)',
-            border: '1px solid rgba(184,150,90,0.25)',
-            padding: '4px 14px', borderRadius: '100px',
+            fontFamily: 'var(--display-font)', fontSize: '22px', fontWeight: 600,
+            color: 'var(--green)', background: '#fff',
+            border: '1px solid var(--border)',
+            padding: '4px 16px', borderRadius: '100px',
           }}>AUM Breakdown</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -189,11 +188,10 @@ export default function Dashboard() {
         <div style={{ marginBottom: '16px' }}>
           <span style={{
             display: 'inline-block',
-            fontSize: '11px', textTransform: 'uppercase',
-            letterSpacing: '0.18em', color: 'var(--gold)', fontWeight: 600,
-            background: 'rgba(184,150,90,0.08)',
-            border: '1px solid rgba(184,150,90,0.25)',
-            padding: '4px 14px', borderRadius: '100px',
+            fontFamily: 'var(--display-font)', fontSize: '22px', fontWeight: 600,
+            color: 'var(--green)', background: '#fff',
+            border: '1px solid var(--border)',
+            padding: '4px 16px', borderRadius: '100px',
           }}>SIP Breakdown</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
