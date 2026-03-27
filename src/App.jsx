@@ -6,6 +6,7 @@ import PartnerDetail from './pages/PartnerDetail';
 import Investors from './pages/Investors';
 import InvestorDetail from './pages/InvestorDetail';
 import Families from './pages/Families';
+import FamilyDetail from './pages/FamilyDetail';
 import Commission from './pages/Commission';
 import Research from './pages/Research';
 import AdminControls from './pages/AdminControls';
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="investors" element={<Investors />} />
           <Route path="investors/:id" element={<InvestorDetail />} />
           <Route path="families" element={<Families />} />
+          <Route path="families/:id" element={<FamilyDetail />} />
           <Route path="commission" element={<Commission />} />
           <Route path="research" element={<Research />} />
           <Route path="admin-controls" element={<AdminControls />} />
