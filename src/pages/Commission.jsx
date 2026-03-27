@@ -15,10 +15,9 @@ const tabLabel = {
   fontWeight: 600,
 };
 
-const months = [
-  'Jan 2026', 'Feb 2026', 'Mar 2026',
-  'Dec 2025', 'Nov 2025', 'Oct 2025',
-];
+const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 4 }, (_, i) => String(currentYear - i));
 
 const mockPartners = [
   { id: 1, name: 'Aakash Shethia', arn: 'ARN-12345', aum: '₹2.4 Cr', trail: '₹8,400', estimated: '₹8,400', confirmed: '₹8,400', paid: false },
@@ -28,8 +27,8 @@ const mockPartners = [
 ];
 
 export default function Commission() {
-  const [selectedMonth, setSelectedMonth] = useState('Mar 2026');
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState('March');
+  const [selectedYear, setSelectedYear] = useState('2026');
   const [partners, setPartners] = useState(mockPartners);
   const [uploadState, setUploadState] = useState('idle'); // idle | processing | done
   const [dragging, setDragging] = useState(false);
@@ -62,55 +61,44 @@ export default function Commission() {
           Commission
         </h1>
 
-        {/* Month selector */}
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setShowMonthPicker(v => !v)}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <select
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(e.target.value)}
             style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '10px 18px', borderRadius: '10px',
-              border: '1.5px solid var(--border)', background: '#fff',
-              fontSize: '13px', fontWeight: 500, color: 'var(--charcoal)',
-              cursor: 'pointer', fontFamily: 'var(--body-font)',
+              padding: '10px 16px', border: '1.5px solid var(--border)',
+              borderRadius: '10px', fontSize: '13px', fontFamily: 'var(--body-font)',
+              color: 'var(--charcoal)', background: '#fff', outline: 'none',
+              cursor: 'pointer', appearance: 'none', minWidth: '130px',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a9e96' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center',
+              paddingRight: '32px',
             }}
           >
-            <span style={{ fontSize: '12px', color: 'var(--gold)' }}>📅</span>
-            {selectedMonth}
-            <span style={{ fontSize: '10px', color: '#8a9e96' }}>▾</span>
-          </button>
-          {showMonthPicker && (
-            <div style={{
-              position: 'absolute', top: 'calc(100% + 6px)', right: 0,
-              background: '#fff', border: '1px solid var(--border)',
-              borderRadius: '10px', boxShadow: 'var(--shadow)',
-              overflow: 'hidden', zIndex: 50, minWidth: '160px',
-            }}>
-              {months.map(m => (
-                <div key={m}
-                  onClick={() => { setSelectedMonth(m); setShowMonthPicker(false); }}
-                  style={{
-                    padding: '11px 18px', fontSize: '13px', cursor: 'pointer',
-                    color: selectedMonth === m ? 'var(--green)' : 'var(--charcoal)',
-                    fontWeight: selectedMonth === m ? 600 : 400,
-                    background: selectedMonth === m ? 'var(--sage)' : '#fff',
-                    borderBottom: '1px solid var(--border)',
-                    transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={e => { if (selectedMonth !== m) e.currentTarget.style.background = 'var(--sage)'; }}
-                  onMouseLeave={e => { if (selectedMonth !== m) e.currentTarget.style.background = '#fff'; }}
-                >
-                  {m}
-                </div>
-              ))}
-            </div>
-          )}
+            {monthNames.map(m => <option key={m}>{m}</option>)}
+          </select>
+          <select
+            value={selectedYear}
+            onChange={e => setSelectedYear(e.target.value)}
+            style={{
+              padding: '10px 16px', border: '1.5px solid var(--border)',
+              borderRadius: '10px', fontSize: '13px', fontFamily: 'var(--body-font)',
+              color: 'var(--charcoal)', background: '#fff', outline: 'none',
+              cursor: 'pointer', appearance: 'none', minWidth: '90px',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a9e96' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center',
+              paddingRight: '32px',
+            }}
+          >
+            {years.map(y => <option key={y}>{y}</option>)}
+          </select>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div style={{ display: 'flex', gap: '16px', marginBottom: '28px' }}>
         {[
-          { label: 'Brokerage Received', value: totalBrokerage, sub: `${selectedMonth}` },
+          { label: 'Brokerage Received', value: totalBrokerage, sub: `${selectedMonth} ${selectedYear}` },
           { label: 'Total Partner Payables', value: totalPayables, sub: 'Across all partners' },
           { label: "Niom's Net Earnings", value: niomEarnings, sub: 'After partner splits' },
         ].map(card => (
@@ -137,14 +125,14 @@ export default function Commission() {
         overflow: 'hidden', marginBottom: '28px',
       }}>
         <div style={{ padding: '20px 28px', borderBottom: '1px solid var(--border)' }}>
-          <span style={sectionHead}>Partner Payables — {selectedMonth}</span>
+          <span style={sectionHead}>Partner Payables ( {selectedMonth} {selectedYear} )</span>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '780px' }}>
             <thead>
               <tr style={{ background: 'var(--sage)' }}>
-                {['Partner', 'ARN', 'AUM', 'Trail Commission', 'Estimated Payable', 'Confirmed Payable', 'Status', 'Action'].map(h => (
+                {['Partner', 'ARN', 'AUM', 'Commission Yield', 'Estimated Payable', 'Confirmed Payable', 'Status', 'Action'].map(h => (
                   <th key={h} style={{
                     padding: '12px 20px', textAlign: 'left',
                     ...tabLabel, fontFamily: 'var(--body-font)', whiteSpace: 'nowrap',
@@ -172,7 +160,14 @@ export default function Commission() {
                   </td>
                   <td style={{ padding: '16px 20px', fontSize: '13px', color: '#8a9e96' }}>{p.arn}</td>
                   <td style={{ padding: '16px 20px', fontFamily: 'var(--display-font)', fontSize: '14px', color: 'var(--charcoal)' }}>{p.aum}</td>
-                  <td style={{ padding: '16px 20px', fontFamily: 'var(--display-font)', fontSize: '14px', color: 'var(--charcoal)' }}>{p.trail}</td>
+                  <td style={{ padding: '16px 20px', fontFamily: 'var(--display-font)', fontSize: '14px', color: 'var(--charcoal)' }}>
+                    {p.confirmed !== '—' && p.aum !== '₹0' ? (() => {
+                      const confirmed = parseFloat(p.confirmed.replace(/[₹,]/g, ''));
+                      const aum = parseFloat(p.aum.replace(/[₹, LCr]/g, '')) *
+                        (p.aum.includes('Cr') ? 10000000 : p.aum.includes('L') ? 100000 : 1);
+                      return (confirmed / aum * 100).toFixed(4) + '%';
+                    })() : '—'}
+                  </td>
                   <td style={{ padding: '16px 20px', fontFamily: 'var(--display-font)', fontSize: '14px', color: '#8a9e96', fontStyle: 'italic' }}>{p.estimated}</td>
                   <td style={{ padding: '16px 20px', fontFamily: 'var(--display-font)', fontSize: '14px', color: 'var(--charcoal)' }}>{p.confirmed}</td>
                   <td style={{ padding: '16px 20px' }}>
@@ -221,7 +216,7 @@ export default function Commission() {
         <div style={{ marginBottom: '24px' }}>
           <span style={sectionHead}>Brokerage File Upload</span>
           <p style={{ fontSize: '13px', color: '#8a9e96', marginTop: '6px' }}>
-            Upload your AMC brokerage file (CSV or Excel) to process commissions for {selectedMonth}.
+            Upload your AMC brokerage file (CSV or Excel) to process commissions for {selectedMonth} {selectedYear}.
           </p>
         </div>
 
