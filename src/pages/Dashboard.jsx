@@ -107,7 +107,6 @@ export default function Dashboard() {
               display: 'flex', flexDirection: 'column',
               alignItems: 'center',
               minHeight: '140px',
-              gap: '16px',
             }}>
               {/* Label */}
               <div style={{
@@ -119,7 +118,7 @@ export default function Dashboard() {
                 {item.label}
               </div>
               {/* Value */}
-              <div style={{ ...tabValue }}>
+              <div style={{ ...tabValue, flex: 1, display: 'flex', alignItems: 'center' }}>
                 {item.value}
               </div>
               {/* Sub */}
