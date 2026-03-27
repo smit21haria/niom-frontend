@@ -23,50 +23,61 @@ const researchSubs = [
   { to: '/research/calculators', label: 'Calculators' },
 ];
 
-const adminSections = [
-  { to: '/admin-controls', label: 'Admin Controls' },
+const adminSubs = [
+  { to: '/admin-controls/profile', label: 'Admin Profile' },
+  { to: '/admin-controls/partners', label: 'Partner Management' },
+  { to: '/admin-controls/investors', label: 'Investor Management' },
+  { to: '/admin-controls/families', label: 'Family Management' },
+  { to: '/admin-controls/access', label: 'Access Control' },
+  { to: '/admin-controls/commission', label: 'Commission Config' },
+  { to: '/admin-controls/brokerage', label: 'Brokerage Management' },
 ];
 
 export default function Sidebar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isResearchActive = pathname.startsWith('/research');
+  const isAdminActive = pathname.startsWith('/admin-controls');
   const [researchOpen, setResearchOpen] = useState(isResearchActive);
+  const [adminOpen, setAdminOpen] = useState(isAdminActive);
 
-  useEffect(() => {
-    if (isResearchActive) setResearchOpen(true);
-  }, [isResearchActive]);
+  useEffect(() => { if (isResearchActive) setResearchOpen(true); }, [isResearchActive]);
+  useEffect(() => { if (isAdminActive) setAdminOpen(true); }, [isAdminActive]);
 
   const navItem = (item) => {
     const isActive = pathname === item.to;
     return (
-      <NavLink
-        key={item.to}
-        to={item.to}
-        style={{
-          display: 'flex', alignItems: 'center',
-          padding: '10px 12px', borderRadius: '8px',
-          fontSize: '13px', fontWeight: isActive ? 500 : 400,
-          color: isActive ? 'var(--green)' : '#5a6a64',
-          background: isActive ? 'rgba(44,74,62,0.08)' : 'transparent',
-          cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
-          marginBottom: '2px', textDecoration: 'none',
-        }}
-        onMouseEnter={e => {
-          if (!isActive) {
-            e.currentTarget.style.background = 'var(--sage)';
-            e.currentTarget.style.color = 'var(--green)';
-          }
-        }}
-        onMouseLeave={e => {
-          if (!isActive) {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = '#5a6a64';
-          }
-        }}
-      >
-        {item.label}
-      </NavLink>
+      <NavLink key={item.to} to={item.to} style={{
+        display: 'flex', alignItems: 'center',
+        padding: '10px 12px', borderRadius: '8px',
+        fontSize: '13px', fontWeight: isActive ? 500 : 400,
+        color: isActive ? 'var(--green)' : '#5a6a64',
+        background: isActive ? 'rgba(44,74,62,0.08)' : 'transparent',
+        cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
+        marginBottom: '2px', textDecoration: 'none',
+      }}
+      onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--sage)'; e.currentTarget.style.color = 'var(--green)'; }}}
+      onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#5a6a64'; }}}
+      >{item.label}</NavLink>
+    );
+  };
+
+  const subItem = (item) => {
+    const isActive = pathname === item.to;
+    return (
+      <NavLink key={item.to} to={item.to} style={{
+        display: 'flex', alignItems: 'center',
+        padding: '8px 12px', borderRadius: '8px',
+        fontSize: '12px', fontWeight: isActive ? 500 : 400,
+        color: isActive ? 'var(--green)' : '#7a8a84',
+        background: isActive ? 'rgba(44,74,62,0.06)' : 'transparent',
+        cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
+        marginBottom: '1px', textDecoration: 'none',
+        borderLeft: isActive ? '2px solid var(--green)' : '2px solid transparent',
+      }}
+      onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--sage)'; e.currentTarget.style.color = 'var(--green)'; }}}
+      onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#7a8a84'; }}}
+      >{item.label}</NavLink>
     );
   };
 
@@ -78,6 +89,36 @@ export default function Sidebar() {
     }}>{text}</div>
   );
 
+  const expandableItem = ({ label, isActive, isOpen, onToggle, defaultRoute, subs }) => (
+    <div>
+      <div onClick={() => { if (!isOpen) { onToggle(true); navigate(defaultRoute); } else onToggle(false); }}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 12px', borderRadius: '8px',
+          fontSize: '13px', fontWeight: isActive ? 500 : 400,
+          color: isActive ? 'var(--green)' : '#5a6a64',
+          background: isActive ? 'rgba(44,74,62,0.08)' : 'transparent',
+          cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
+          marginBottom: '2px', userSelect: 'none',
+        }}
+        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--sage)'; e.currentTarget.style.color = 'var(--green)'; }}}
+        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = isActive ? 'rgba(44,74,62,0.08)' : 'transparent'; e.currentTarget.style.color = isActive ? 'var(--green)' : '#5a6a64'; }}}
+      >
+        <span>{label}</span>
+        <span style={{
+          fontSize: '10px', color: isActive ? 'var(--green)' : '#8a9e96',
+          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+          transition: 'transform 0.2s', display: 'inline-block',
+        }}>▾</span>
+      </div>
+      {isOpen && (
+        <div style={{ paddingLeft: '12px', marginBottom: '4px' }}>
+          {subs.map(subItem)}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <aside style={{
       width: '220px', background: '#fff',
@@ -85,113 +126,37 @@ export default function Sidebar() {
       position: 'fixed', top: '60px', left: 0, bottom: 0,
       padding: '32px 20px', overflowY: 'auto', zIndex: 90,
     }}>
-
-      {/* Main */}
       <div style={{ marginBottom: '24px' }}>
         {sectionLabel('Main')}
         {mainSections.map(navItem)}
       </div>
-
-      {/* Clients */}
       <div style={{ marginBottom: '24px' }}>
         {sectionLabel('Clients')}
         {clientSections.map(navItem)}
       </div>
-
-      {/* Finance */}
       <div style={{ marginBottom: '24px' }}>
         {sectionLabel('Finance')}
         {financeSections.map(navItem)}
       </div>
-
-      {/* Tools */}
       <div style={{ marginBottom: '24px' }}>
         {sectionLabel('Tools')}
-
-        {/* Research — expandable */}
-        <div>
-          <div
-            onClick={() => {
-              if (!researchOpen) {
-                setResearchOpen(true);
-                navigate('/research/funds');
-              } else {
-                setResearchOpen(false);
-              }
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 12px', borderRadius: '8px',
-              fontSize: '13px', fontWeight: isResearchActive ? 500 : 400,
-              color: isResearchActive ? 'var(--green)' : '#5a6a64',
-              background: isResearchActive ? 'rgba(44,74,62,0.08)' : 'transparent',
-              cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
-              marginBottom: '2px', userSelect: 'none',
-            }}
-            onMouseEnter={e => {
-              if (!isResearchActive) {
-                e.currentTarget.style.background = 'var(--sage)';
-                e.currentTarget.style.color = 'var(--green)';
-              }
-            }}
-            onMouseLeave={e => {
-              if (!isResearchActive) {
-                e.currentTarget.style.background = isResearchActive ? 'rgba(44,74,62,0.08)' : 'transparent';
-                e.currentTarget.style.color = isResearchActive ? 'var(--green)' : '#5a6a64';
-              }
-            }}
-          >
-            <span>Research</span>
-            <span style={{
-              fontSize: '10px', color: isResearchActive ? 'var(--green)' : '#8a9e96',
-              transform: researchOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s', display: 'inline-block',
-            }}>▾</span>
-          </div>
-
-          {/* Sub-items */}
-          {researchOpen && (
-            <div style={{ paddingLeft: '12px', marginBottom: '4px' }}>
-              {researchSubs.map(item => {
-                const isActive = pathname === item.to;
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    style={{
-                      display: 'flex', alignItems: 'center',
-                      padding: '8px 12px', borderRadius: '8px',
-                      fontSize: '12px', fontWeight: isActive ? 500 : 400,
-                      color: isActive ? 'var(--green)' : '#7a8a84',
-                      background: isActive ? 'rgba(44,74,62,0.06)' : 'transparent',
-                      cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
-                      marginBottom: '1px', textDecoration: 'none',
-                      borderLeft: isActive ? '2px solid var(--green)' : '2px solid transparent',
-                    }}
-                    onMouseEnter={e => {
-                      if (!isActive) {
-                        e.currentTarget.style.background = 'var(--sage)';
-                        e.currentTarget.style.color = 'var(--green)';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (!isActive) {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = '#7a8a84';
-                      }
-                    }}
-                  >
-                    {item.label}
-                  </NavLink>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {adminSections.map(navItem)}
+        {expandableItem({
+          label: 'Research',
+          isActive: isResearchActive,
+          isOpen: researchOpen,
+          onToggle: setResearchOpen,
+          defaultRoute: '/research/funds',
+          subs: researchSubs,
+        })}
+        {expandableItem({
+          label: 'Admin Controls',
+          isActive: isAdminActive,
+          isOpen: adminOpen,
+          onToggle: setAdminOpen,
+          defaultRoute: '/admin-controls/profile',
+          subs: adminSubs,
+        })}
       </div>
-
     </aside>
   );
 }

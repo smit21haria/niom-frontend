@@ -12,7 +12,13 @@ import ResearchFunds from './pages/ResearchFunds';
 import ResearchCompare from './pages/ResearchCompare';
 import ResearchCategories from './pages/ResearchCategories';
 import ResearchCalculators from './pages/ResearchCalculators';
-import AdminControls from './pages/AdminControls';
+import AdminProfile from './pages/AdminProfile';
+import AdminPartners from './pages/AdminPartners';
+import AdminInvestors from './pages/AdminInvestors';
+import AdminFamilies from './pages/AdminFamilies';
+import AdminAccessControl from './pages/AdminAccessControl';
+import AdminCommissionConfig from './pages/AdminCommissionConfig';
+import AdminBrokerage from './pages/AdminBrokerage';
 import ClientReports from './pages/ClientReports';
 
 export default function App() {
@@ -34,7 +40,14 @@ export default function App() {
           <Route path="research/compare" element={<ResearchCompare />} />
           <Route path="research/categories" element={<ResearchCategories />} />
           <Route path="research/calculators" element={<ResearchCalculators />} />
-          <Route path="admin-controls" element={<AdminControls />} />
+          <Route path="admin-controls" element={<Navigate to="/admin-controls/profile" replace />} />
+          <Route path="admin-controls/profile" element={<AdminProfile />} />
+          <Route path="admin-controls/partners" element={<AdminPartners />} />
+          <Route path="admin-controls/investors" element={<AdminInvestors />} />
+          <Route path="admin-controls/families" element={<AdminFamilies />} />
+          <Route path="admin-controls/access" element={<AdminAccessControl />} />
+          <Route path="admin-controls/commission" element={<AdminCommissionConfig />} />
+          <Route path="admin-controls/brokerage" element={<AdminBrokerage />} />
           <Route path="client-reports" element={<ClientReports />} />
         </Route>
       </Routes>
