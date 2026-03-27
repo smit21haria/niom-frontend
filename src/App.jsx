@@ -8,7 +8,10 @@ import InvestorDetail from './pages/InvestorDetail';
 import Families from './pages/Families';
 import FamilyDetail from './pages/FamilyDetail';
 import Commission from './pages/Commission';
-import Research from './pages/Research';
+import ResearchFunds from './pages/ResearchFunds';
+import ResearchCompare from './pages/ResearchCompare';
+import ResearchCategories from './pages/ResearchCategories';
+import ResearchCalculators from './pages/ResearchCalculators';
 import AdminControls from './pages/AdminControls';
 import ClientReports from './pages/ClientReports';
 
@@ -26,7 +29,11 @@ export default function App() {
           <Route path="families" element={<Families />} />
           <Route path="families/:id" element={<FamilyDetail />} />
           <Route path="commission" element={<Commission />} />
-          <Route path="research" element={<Research />} />
+          <Route path="research" element={<Navigate to="/research/funds" replace />} />
+          <Route path="research/funds" element={<ResearchFunds />} />
+          <Route path="research/compare" element={<ResearchCompare />} />
+          <Route path="research/categories" element={<ResearchCategories />} />
+          <Route path="research/calculators" element={<ResearchCalculators />} />
           <Route path="admin-controls" element={<AdminControls />} />
           <Route path="client-reports" element={<ClientReports />} />
         </Route>
