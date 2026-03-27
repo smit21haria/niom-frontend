@@ -6,9 +6,9 @@ export default function Layout() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
-      <div style={{ marginLeft: '220px', flex: 1, display: 'flex', flexDirection: 'column', paddingTop: '60px' }}>
+      <div style={{ marginLeft: '220px', flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <TopBar />
-        <main style={{ flex: 1, padding: '40px 48px 80px', background: 'var(--panel-bg)' }}>
+        <main style={{ marginTop: '60px', padding: '40px 48px 80px', flex: 1, background: 'var(--panel-bg)', minWidth: 0, overflowX: 'hidden' }}>
           <Outlet />
         </main>
       </div>
