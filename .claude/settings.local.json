@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(gh auth:*)",
+      "Bash(git --version)",
+      "Bash(brew install:*)",
+      "Bash(git init:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh repo:*)",
+      "WebFetch(domain:niom-backend.onrender.com)",
+      "Bash(git push:*)",
+      "Bash(git revert:*)"
+    ]
+  }
+}
