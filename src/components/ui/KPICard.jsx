@@ -22,6 +22,7 @@ export default function KPICard({ label, value, subtitle, to }) {
         flexDirection: 'column',
         alignItems: 'center',
         textAlign: 'center',
+        gap: '16px',
       }}
       onMouseEnter={e => {
         if (clickable) {
@@ -57,10 +58,6 @@ export default function KPICard({ label, value, subtitle, to }) {
         fontWeight: 600,
         color: 'var(--charcoal)',
         lineHeight: 1,
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
       }}>
         {value}
       </div>
