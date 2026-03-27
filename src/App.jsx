@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Partners from './pages/Partners';
+import PartnerDetail from './pages/PartnerDetail';
 import Investors from './pages/Investors';
 import Families from './pages/Families';
 import Commission from './pages/Commission';
@@ -17,6 +18,7 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="partners" element={<Partners />} />
+          <Route path="partners/:id" element={<PartnerDetail />} />
           <Route path="investors" element={<Investors />} />
           <Route path="families" element={<Families />} />
           <Route path="commission" element={<Commission />} />
