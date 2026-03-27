@@ -113,9 +113,8 @@ export default function PartnerDetail() {
         border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
         overflow: 'hidden', marginBottom: '28px',
       }}>
-        <div style={{ padding: '20px 28px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: '20px 28px', borderBottom: '1px solid var(--border)' }}>
           <span style={sectionHead}>Investors</span>
-          <a href="/investors" style={{ fontSize: '12px', color: 'var(--green)', textDecoration: 'underline', cursor: 'pointer' }}>View More</a>
         </div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -134,11 +133,11 @@ export default function PartnerDetail() {
                 style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--sage)'}
                 onMouseLeave={e => e.currentTarget.style.background = ''}>
-                <td style={{ padding: '14px 24px', fontSize: '13px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>—</td>
-                <td style={{ padding: '14px 24px', fontSize: '13px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>₹0</td>
-                <td style={{ padding: '14px 24px', fontSize: '13px', fontFamily: 'var(--display-font)', color: '#8a9e96' }}>0%</td>
-                <td style={{ padding: '14px 24px', fontSize: '13px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>₹0</td>
-                <td style={{ padding: '14px 24px', fontSize: '13px', fontFamily: 'var(--display-font)', color: '#8a9e96' }}>—</td>
+                <td style={{ padding: '14px 24px', fontSize: '13px', color: 'var(--charcoal)' }}>—</td>
+                <td style={{ padding: '14px 24px', fontSize: '13px', color: 'var(--charcoal)' }}>₹0</td>
+                <td style={{ padding: '14px 24px', fontSize: '13px', color: '#8a9e96' }}>0%</td>
+                <td style={{ padding: '14px 24px', fontSize: '13px', color: 'var(--charcoal)' }}>₹0</td>
+                <td style={{ padding: '14px 24px', fontSize: '13px', color: '#8a9e96' }}>—</td>
               </tr>
             ))}
           </tbody>

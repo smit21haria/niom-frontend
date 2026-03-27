@@ -301,10 +301,10 @@ export default function Dashboard() {
                 <tr key={i} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--sage)'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}>
-                  <td style={{ padding: '13px 20px', fontSize: '13px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>—</td>
-                  <td style={{ padding: '13px 20px', fontSize: '13px', fontFamily: 'var(--display-font)', color: '#8a9e96' }}>—</td>
-                  <td style={{ padding: '13px 20px', fontSize: '13px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>₹0</td>
-                  <td style={{ padding: '13px 20px', fontSize: '13px', fontFamily: 'var(--display-font)', color: '#8a9e96' }}>—</td>
+                  <td style={{ padding: '13px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>—</td>
+                  <td style={{ padding: '13px 20px', fontSize: '13px', color: '#8a9e96' }}>—</td>
+                  <td style={{ padding: '13px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>₹0</td>
+                  <td style={{ padding: '13px 20px', fontSize: '13px', color: '#8a9e96' }}>—</td>
                 </tr>
               ))}
             </tbody>
@@ -368,9 +368,9 @@ export default function Dashboard() {
                   <tr key={i} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--sage)'}
                     onMouseLeave={e => e.currentTarget.style.background = ''}>
-                    <td style={{ padding: '13px 24px', fontSize: '13px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>—</td>
-                    <td style={{ padding: '13px 24px', fontSize: '13px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>₹0</td>
-                    <td style={{ padding: '13px 24px', fontSize: '13px', fontFamily: 'var(--display-font)', color: '#8a9e96' }}>0%</td>
+                    <td style={{ padding: '13px 24px', fontSize: '13px', color: 'var(--charcoal)' }}>—</td>
+                    <td style={{ padding: '13px 24px', fontSize: '13px', color: 'var(--charcoal)' }}>₹0</td>
+                    <td style={{ padding: '13px 24px', fontSize: '13px', color: '#8a9e96' }}>0%</td>
                   </tr>
                 ))}
               </tbody>
