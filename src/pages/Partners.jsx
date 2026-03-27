@@ -132,11 +132,11 @@ export default function Partners() {
                   }}>{p.status}</span>
                 </td>
                 <td style={{ padding: '16px 20px', fontSize: '14px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>{p.aum}</td>
-                <td style={{ padding: '16px 20px', fontSize: '13px', color: p.aumChange.startsWith('+') ? '#2d8a55' : p.aumChange === '—' ? '#8a9e96' : '#c0392b' }}>{p.aumChange}</td>
-                <td style={{ padding: '16px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{p.investors}</td>
-                <td style={{ padding: '16px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{p.sip}<span style={{ color: '#8a9e96', fontSize: '12px' }}> · {p.sipCount} SIPs</span></td>
-                <td style={{ padding: '16px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{p.commission}</td>
-                <td style={{ padding: '16px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{p.leads}</td>
+                <td style={{ padding: '16px 20px', fontSize: '13px', fontFamily: 'var(--display-font)', color: p.aumChange.startsWith('+') ? '#2d8a55' : p.aumChange === '—' ? '#8a9e96' : '#c0392b' }}>{p.aumChange}</td>
+                <td style={{ padding: '16px 20px', fontSize: '13px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>{p.investors}</td>
+                <td style={{ padding: '16px 20px', fontSize: '14px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>{p.sip}<span style={{ color: '#8a9e96', fontSize: '12px' }}> · {p.sipCount} SIPs</span></td>
+                <td style={{ padding: '16px 20px', fontSize: '13px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>{p.commission}</td>
+                <td style={{ padding: '16px 20px', fontSize: '13px', fontFamily: 'var(--display-font)', color: 'var(--charcoal)' }}>{p.leads}</td>
                 <td style={{ padding: '16px 20px', fontSize: '13px', color: '#8a9e96' }}>{p.lastTxn}</td>
               </tr>
             ))}
