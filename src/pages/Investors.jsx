@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { investors, formatINR } from '../lib/api';
+import { investors, partners as partnersApi, formatINR } from '../lib/api';
 
 const sectionHead = {
   fontFamily: 'var(--display-font)',
@@ -52,7 +52,7 @@ export default function Investors() {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [partnerFilter, setPartnerFilter] = useState('');
-  const [kycFilter, setKycFilter] = useState('');
+  const [partnersList, setPartnersList] = useState([]);
   const [sortKey, setSortKey] = useState('aum');
   const [sortDir, setSortDir] = useState('desc');
   const [page, setPage] = useState(0);
@@ -66,8 +66,15 @@ export default function Investors() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
+  // Load partners list for dropdown
+  useEffect(() => {
+    partnersApi.list({ limit: 100 })
+      .then(r => setPartnersList(Array.isArray(r) ? r : []))
+      .catch(() => {});
+  }, []);
+
   // Reset page on filter change
-  useEffect(() => { setPage(0); }, [partnerFilter, kycFilter]);
+  useEffect(() => { setPage(0); }, [partnerFilter]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,7 +83,6 @@ export default function Investors() {
       const result = await investors.list({
         search: search || undefined,
         partner_id: partnerFilter || undefined,
-        kyc_status: kycFilter || undefined,
         limit: LIMIT,
         offset: page * LIMIT,
       });
@@ -87,7 +93,7 @@ export default function Investors() {
     } finally {
       setLoading(false);
     }
-  }, [search, partnerFilter, kycFilter, page]);
+  }, [search, partnerFilter, page]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -182,23 +188,24 @@ export default function Investors() {
             />
           </div>
 
-          {/* KYC filter */}
-          <select value={kycFilter} onChange={e => setKycFilter(e.target.value)}
+          {/* Partner filter */}
+          <select value={partnerFilter} onChange={e => { setPartnerFilter(e.target.value); setPage(0); }}
             style={{
               padding: '10px 14px', border: '1.5px solid var(--border)',
               borderRadius: '8px', fontSize: '13px', fontFamily: 'var(--body-font)',
-              color: kycFilter ? 'var(--charcoal)' : '#9aaa9e',
+              color: partnerFilter ? 'var(--charcoal)' : '#9aaa9e',
               background: 'var(--ivory)', outline: 'none',
-              appearance: 'none', cursor: 'pointer', minWidth: '140px',
+              appearance: 'none', cursor: 'pointer', minWidth: '160px',
             }}>
-            <option value="">All KYC Status</option>
-            <option value="verified">Verified</option>
-            <option value="pending">Pending</option>
+            <option value="">All Partners</option>
+            {partnersList.map(p => (
+              <option key={p.id} value={p.id}>{p.fname} {p.lname}</option>
+            ))}
           </select>
 
           {/* Clear filters */}
-          {(searchInput || partnerFilter || kycFilter) && (
-            <button onClick={() => { setSearchInput(''); setPartnerFilter(''); setKycFilter(''); setPage(0); }}
+          {(searchInput || partnerFilter) && (
+            <button onClick={() => { setSearchInput(''); setPartnerFilter(''); setPage(0); }}
               style={{
                 padding: '10px 16px', borderRadius: '8px', fontSize: '12px',
                 border: '1.5px solid var(--border)', background: '#fff',
