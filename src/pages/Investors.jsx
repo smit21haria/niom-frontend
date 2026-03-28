@@ -255,9 +255,9 @@ export default function Investors() {
                       No investors yet
                     </div>
                     <div style={{ fontSize: '13px', color: '#8a9e96', marginBottom: '20px' }}>
-                      {search || kycFilter ? 'No results match your filters.' : 'Onboard your first investor from Admin Controls.'}
+                      {search || partnerFilter ? 'No results match your filters.' : 'Onboard your first investor from Admin Controls.'}
                     </div>
-                    {!search && !kycFilter && (
+                    {!search && !partnerFilter && (
                       <button onClick={() => navigate('/admin-controls/investors')} style={{
                         padding: '10px 24px', borderRadius: '8px',
                         background: 'var(--green)', color: 'var(--ivory)',
