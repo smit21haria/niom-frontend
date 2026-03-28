@@ -1,4 +1,5 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { clearToken } from '../../lib/api';
 
 const titles = {
   '/dashboard': 'Client Dashboard',
@@ -13,6 +14,11 @@ const titles = {
 
 export default function TopBar() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  function handleLogout() {
+    clearToken();
+    navigate('/login', { replace: true });
+  }
 
   return (
     <div style={{
@@ -33,14 +39,15 @@ export default function TopBar() {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
         <span style={{ fontSize: '13px', color: '#8a9e96', letterSpacing: '0.04em' }}>niom@admin</span>
-        <button
-          style={{
-            fontSize: '12px', color: '#8a9e96', letterSpacing: '0.1em',
-            textTransform: 'uppercase', cursor: 'pointer', background: 'none', border: 'none',
-            transition: 'color 0.2s',
-          }}
-          onMouseEnter={e => e.target.style.color = 'var(--gold)'}
-          onMouseLeave={e => e.target.style.color = '#8a9e96'}
+        <button onClick={handleLogout} style={{
+          padding: '7px 16px', borderRadius: '7px', fontSize: '12px',
+          border: '1.5px solid rgba(255,255,255,0.2)',
+          background: 'transparent', color: 'rgba(255,255,255,0.7)',
+          cursor: 'pointer', fontFamily: 'var(--body-font)',
+          transition: 'all 0.2s',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
         >Log out</button>
       </div>
     </div>
