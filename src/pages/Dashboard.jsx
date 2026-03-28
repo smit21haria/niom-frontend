@@ -85,6 +85,7 @@ export default function Dashboard() {
     return row || { count: 0, total_amount: 0 };
   }
 
+  const aumByBroadCategory = breakdown?.by_broad_category || [];
   const aumByCategory = breakdown?.by_category?.map(d => ({ name: d.category_name || 'Unknown', aum: d.aum })) || [];
   const aumByAmc = breakdown?.by_amc?.map(d => ({ name: d.amc_name || 'Unknown', aum: d.aum })) || [];
   const aumByStyle = breakdown?.by_style?.map(d => ({ name: d.style_box || 'Unknown', aum: d.aum })) || [];
@@ -211,7 +212,7 @@ export default function Dashboard() {
           {/* By Category */}
           <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '24px' }}>
             <div style={{ ...tabLabel, textAlign: 'left', marginBottom: '16px' }}>By Category</div>
-            <DonutChart data={aumByCategory} nameKey="name" valueKey="aum" formatValue={formatINR} height={220} />
+            <DonutChart data={aumByBroadCategory} nameKey="name" valueKey="aum" formatValue={formatINR} height={220} />
           </div>
           {/* By Subcategory */}
           <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '24px' }}>
@@ -240,7 +241,7 @@ export default function Dashboard() {
           {/* By Category */}
           <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '24px' }}>
             <div style={{ ...tabLabel, textAlign: 'left', marginBottom: '16px' }}>By Category</div>
-            <DonutChart data={aumByCategory} nameKey="name" valueKey="aum" formatValue={formatINR} height={220} />
+            <DonutChart data={aumByBroadCategory} nameKey="name" valueKey="aum" formatValue={formatINR} height={220} />
           </div>
           {/* By AMC */}
           <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '24px' }}>
