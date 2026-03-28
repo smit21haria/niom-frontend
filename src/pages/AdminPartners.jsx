@@ -112,6 +112,7 @@ export default function AdminPartners() {
   const [filterStatus, setFilterStatus] = useState('All');
   const [partners, setPartners] = useState(mockPartners);
   const [drawer, setDrawer] = useState(null);
+  const [confirm, setConfirm] = useState(null);
 
   // Onboard form state
   const [form, setForm] = useState({
@@ -177,21 +178,8 @@ export default function AdminPartners() {
           {/* ── PARTNER LIST ── */}
           {activeSection === 'Partner List' && (
             <div>
-              {/* KPI Cards */}
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '28px' }}>
-                <KPICard label="Total AUM" value="₹3.6 Cr" subtitle="All partners" />
-                <KPICard label="Active Partners" value="2" subtitle="1 pending · 1 paused" />
-                <KPICard label="Monthly SIP Book" value="₹1.87 L" subtitle="All partners" />
-                <KPICard label="Commission Due" value="₹12,700" subtitle="This month" />
-                <KPICard label="Total Leads MTD" value="9" subtitle="All micro-sites" />
-                <KPICard label="Net New AUM" value="+₹14 L" subtitle="vs last month" />
-              </div>
-
               {/* Toolbar */}
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                marginBottom: '20px',
-              }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   {['All', 'Live', 'Pending', 'Paused'].map(f => (
                     <button key={f} onClick={() => setFilterStatus(f)} style={{
@@ -205,7 +193,6 @@ export default function AdminPartners() {
                   ))}
                 </div>
                 <button onClick={() => setActiveSection('Onboard Partner')} style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
                   padding: '9px 20px', borderRadius: '8px',
                   background: 'var(--green)', color: 'var(--ivory)',
                   border: 'none', fontSize: '13px', fontWeight: 500,
@@ -216,14 +203,44 @@ export default function AdminPartners() {
                 >+ Add Partner</button>
               </div>
 
-              {/* Partner Cards Grid */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                gap: '20px',
-              }}>
+              {/* Confirm modal */}
+              {confirm && (
+                <div style={{
+                  position: 'fixed', inset: 0, background: 'rgba(26,43,37,0.7)',
+                  backdropFilter: 'blur(4px)', zIndex: 3000,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+                }}>
+                  <div style={{
+                    background: 'var(--ivory)', borderRadius: '14px', padding: '40px 36px',
+                    maxWidth: '400px', width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+                  }}>
+                    <div style={{ fontFamily: 'var(--display-font)', fontSize: '24px', fontWeight: 600, color: 'var(--green)', marginBottom: '12px' }}>
+                      {confirm.title}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#5a6a64', lineHeight: 1.7, marginBottom: '28px' }}>
+                      {confirm.body}
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                      <button onClick={() => setConfirm(null)} style={{
+                        padding: '10px 20px', borderRadius: '8px', fontSize: '13px',
+                        border: '1.5px solid var(--border)', background: '#fff',
+                        color: '#5a6a64', cursor: 'pointer',
+                      }}>Cancel</button>
+                      <button onClick={() => { confirm.action(); setConfirm(null); }} style={{
+                        padding: '10px 24px', borderRadius: '8px', fontSize: '13px',
+                        background: confirm.danger ? '#c0392b' : 'var(--green)',
+                        color: '#fff', border: 'none', fontWeight: 500, cursor: 'pointer',
+                      }}>{confirm.label}</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Partners grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                 {filtered.map(p => {
                   const initials = p.name.split(' ').map(n => n[0]).join('');
+                  const slug = p.name.split(' ').join('-').toLowerCase();
 
                   return (
                     <div key={p.id} style={{
@@ -234,159 +251,166 @@ export default function AdminPartners() {
                       onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 32px rgba(44,74,62,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
                       onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                     >
-                      {/* Card top */}
+                      {/* Top */}
                       <div style={{ padding: '22px 24px 16px', display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                        {/* Avatar */}
                         <div style={{
                           width: '52px', height: '52px', borderRadius: '50%',
                           border: '2px solid var(--gold)', flexShrink: 0,
-                          background: 'var(--sage)', display: 'flex',
-                          alignItems: 'center', justifyContent: 'center',
-                          fontFamily: 'var(--display-font)', fontSize: '20px',
-                          color: 'var(--green)', fontWeight: 600,
-                        }}>
-                          {initials}
-                        </div>
-
-                        {/* Name + tagline */}
+                          background: 'var(--sage)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontFamily: 'var(--display-font)', fontSize: '20px', color: 'var(--green)', fontWeight: 600,
+                        }}>{initials}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{
-                            fontFamily: 'var(--display-font)', fontSize: '20px',
-                            fontWeight: 600, color: 'var(--green)', lineHeight: 1.1, marginBottom: '4px',
-                          }}>{p.name}</div>
-                          <div style={{
-                            fontSize: '12px', color: '#8a9e96', fontWeight: 300,
-                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                          }}>{p.arn}</div>
+                          <div style={{ fontFamily: 'var(--display-font)', fontSize: '20px', fontWeight: 600, color: 'var(--green)', lineHeight: 1.1, marginBottom: '4px' }}>
+                            {p.name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#8a9e96', fontWeight: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {p.arn}
+                          </div>
                         </div>
-
-                        {/* Status badge */}
+                        {/* Status badge with dot */}
                         <div style={{
                           display: 'inline-flex', alignItems: 'center', gap: '5px',
                           padding: '4px 10px', borderRadius: '100px',
-                          fontSize: '11px', fontWeight: 500, letterSpacing: '0.06em',
-                          flexShrink: 0,
+                          fontSize: '11px', fontWeight: 500, letterSpacing: '0.06em', flexShrink: 0,
                           background: p.status === 'live' ? '#e6f7ec' : p.status === 'pending' ? '#fef9ec' : '#f5f5f5',
                           color: p.status === 'live' ? '#1a7a3c' : p.status === 'pending' ? '#8a6200' : '#7a7a7a',
                         }}>
                           <div style={{
-                            width: '6px', height: '6px', borderRadius: '50%',
+                            width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
                             background: p.status === 'live' ? '#2ecc71' : p.status === 'pending' ? '#f39c12' : '#aaa',
-                            flexShrink: 0,
                           }} />
                           {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
                         </div>
                       </div>
 
-                      {/* Meta row */}
-                      <div style={{
-                        padding: '0 24px 16px',
-                        display: 'flex', gap: '16px',
-                        borderBottom: '1px solid var(--border)',
-                      }}>
-                        <div style={{ fontSize: '12px', color: '#9aaa9e', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          Investors: <span style={{ color: 'var(--charcoal)', fontWeight: 500, fontFamily: 'var(--display-font)' }}>{p.investors}</span>
+                      {/* Meta row: slug + date */}
+                      <div style={{ padding: '0 24px 16px', display: 'flex', gap: '16px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                        <div style={{ fontSize: '12px', color: '#9aaa9e', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          🔗 <span style={{ color: 'var(--charcoal)', fontWeight: 500 }}>niomfintech.in/{slug}</span>
                         </div>
-                        <div style={{ fontSize: '12px', color: '#9aaa9e', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          AUM: <span style={{ color: 'var(--charcoal)', fontWeight: 500, fontFamily: 'var(--display-font)' }}>{p.aum}</span>
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#9aaa9e', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          Leads: <span style={{ color: 'var(--charcoal)', fontWeight: 500, fontFamily: 'var(--display-font)' }}>{p.leads}</span>
+                        <div style={{ fontSize: '12px', color: '#9aaa9e', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          📅 <span style={{ color: 'var(--charcoal)', fontWeight: 500 }}>{p.lastTxn}</span>
                         </div>
                       </div>
 
                       {/* Action buttons */}
                       <div style={{ padding: '14px 24px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {/* Preview — always */}
+                        <button onClick={() => window.open(`https://niom-backend.onrender.com/${slug}`, '_blank')} style={{
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                          padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
+                          fontWeight: 500, cursor: 'pointer', border: '1.5px solid var(--border)',
+                          background: '#fff', color: '#5a6a64', fontFamily: 'var(--body-font)',
+                          transition: 'all 0.2s',
+                        }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.background = 'rgba(44,74,62,0.04)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = '#5a6a64'; e.currentTarget.style.background = '#fff'; }}
+                        >👁 Preview</button>
+
+                        {/* Edit — always */}
+                        <button onClick={() => setDrawer(p)} style={{
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                          padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
+                          fontWeight: 500, cursor: 'pointer', border: '1.5px solid var(--border)',
+                          background: '#fff', color: '#5a6a64', fontFamily: 'var(--body-font)',
+                          transition: 'all 0.2s',
+                        }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.background = 'rgba(44,74,62,0.04)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = '#5a6a64'; e.currentTarget.style.background = '#fff'; }}
+                        >✎ Edit</button>
+
                         {/* Pending: Approve + Reject */}
                         {p.status === 'pending' && <>
-                          <button onClick={() => setPartners(prev => prev.map(x => x.id === p.id ? { ...x, status: 'live' } : x))} style={{
+                          <button onClick={() => setConfirm({
+                            title: 'Approve & Go Live',
+                            body: `This will publish ${p.name}'s page. Are you sure?`,
+                            label: 'Approve',
+                            danger: false,
+                            action: () => setPartners(prev => prev.map(x => x.id === p.id ? { ...x, status: 'live' } : x)),
+                          })} style={{
                             display: 'flex', alignItems: 'center', gap: '6px',
-                            padding: '7px 13px', borderRadius: '7px',
-                            background: 'rgba(44,74,62,0.08)', color: 'var(--green)',
-                            border: '1px solid rgba(44,74,62,0.2)', fontSize: '12px',
-                            fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--body-font)',
-                            transition: 'all 0.15s',
+                            padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
+                            fontWeight: 500, cursor: 'pointer',
+                            background: 'var(--green)', color: 'var(--ivory)',
+                            border: '1.5px solid var(--green)', fontFamily: 'var(--body-font)',
+                            transition: 'all 0.2s',
                           }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(44,74,62,0.16)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(44,74,62,0.08)'}
+                            onMouseEnter={e => e.currentTarget.style.background = '#1a3a2e'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'var(--green)'}
                           >✓ Approve</button>
-                          <button onClick={() => setPartners(prev => prev.filter(x => x.id !== p.id))} style={{
+                          <button onClick={() => setConfirm({
+                            title: 'Reject Partner',
+                            body: `This will reject ${p.name}'s onboarding.`,
+                            label: 'Reject',
+                            danger: true,
+                            action: () => setPartners(prev => prev.filter(x => x.id !== p.id)),
+                          })} style={{
                             display: 'flex', alignItems: 'center', gap: '6px',
-                            padding: '7px 13px', borderRadius: '7px',
-                            background: 'rgba(192,57,43,0.06)', color: '#c0392b',
-                            border: '1px solid rgba(192,57,43,0.2)', fontSize: '12px',
-                            fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--body-font)',
-                            transition: 'all 0.15s',
+                            padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
+                            fontWeight: 500, cursor: 'pointer',
+                            color: '#c0392b', border: '1.5px solid rgba(192,57,43,0.25)',
+                            background: '#fff', fontFamily: 'var(--body-font)', transition: 'all 0.2s',
                           }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(192,57,43,0.12)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(192,57,43,0.06)'}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#fdf2f0'; e.currentTarget.style.borderColor = '#c0392b'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(192,57,43,0.25)'; }}
                           >✕ Reject</button>
                         </>}
 
-                        {/* Live: Pause + View */}
-                        {p.status === 'live' && <>
-                          <button onClick={() => setPartners(prev => prev.map(x => x.id === p.id ? { ...x, status: 'paused' } : x))} style={{
+                        {/* Live: Pause */}
+                        {p.status === 'live' && (
+                          <button onClick={() => setConfirm({
+                            title: 'Pause Partner Page',
+                            body: `This will take ${p.name}'s page offline.`,
+                            label: 'Pause',
+                            danger: false,
+                            action: () => setPartners(prev => prev.map(x => x.id === p.id ? { ...x, status: 'paused' } : x)),
+                          })} style={{
                             display: 'flex', alignItems: 'center', gap: '6px',
-                            padding: '7px 13px', borderRadius: '7px',
-                            background: 'rgba(184,150,90,0.08)', color: 'var(--gold)',
-                            border: '1px solid rgba(184,150,90,0.25)', fontSize: '12px',
-                            fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--body-font)',
-                            transition: 'all 0.15s',
+                            padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
+                            fontWeight: 500, cursor: 'pointer',
+                            color: '#c0392b', border: '1.5px solid rgba(192,57,43,0.25)',
+                            background: '#fff', fontFamily: 'var(--body-font)', transition: 'all 0.2s',
                           }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(184,150,90,0.16)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(184,150,90,0.08)'}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#fdf2f0'; e.currentTarget.style.borderColor = '#c0392b'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(192,57,43,0.25)'; }}
                           >⏸ Pause</button>
-                          <button onClick={() => navigate(`/partners/${p.id}`)} style={{
-                            display: 'flex', alignItems: 'center', gap: '6px',
-                            padding: '7px 13px', borderRadius: '7px',
-                            background: 'var(--sage)', color: 'var(--green)',
-                            border: '1px solid var(--border)', fontSize: '12px',
-                            fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--body-font)',
-                            transition: 'all 0.15s',
-                          }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(44,74,62,0.08)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'var(--sage)'}
-                          >↗ View</button>
-                        </>}
+                        )}
 
                         {/* Paused: Go Live + Delete */}
                         {p.status === 'paused' && <>
-                          <button onClick={() => setPartners(prev => prev.map(x => x.id === p.id ? { ...x, status: 'live' } : x))} style={{
+                          <button onClick={() => setConfirm({
+                            title: 'Restore to Live',
+                            body: `This will re-publish ${p.name}'s page.`,
+                            label: 'Go Live',
+                            danger: false,
+                            action: () => setPartners(prev => prev.map(x => x.id === p.id ? { ...x, status: 'live' } : x)),
+                          })} style={{
                             display: 'flex', alignItems: 'center', gap: '6px',
-                            padding: '7px 13px', borderRadius: '7px',
-                            background: 'rgba(44,74,62,0.08)', color: 'var(--green)',
-                            border: '1px solid rgba(44,74,62,0.2)', fontSize: '12px',
-                            fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--body-font)',
-                            transition: 'all 0.15s',
+                            padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
+                            fontWeight: 500, cursor: 'pointer',
+                            background: '#1a7a3c', color: '#fff',
+                            border: '1.5px solid #1a7a3c', fontFamily: 'var(--body-font)', transition: 'all 0.2s',
                           }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(44,74,62,0.16)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(44,74,62,0.08)'}
+                            onMouseEnter={e => e.currentTarget.style.background = '#155e2e'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#1a7a3c'}
                           >▶ Go Live</button>
-                          <button onClick={() => setPartners(prev => prev.filter(x => x.id !== p.id))} style={{
+                          <button onClick={() => setConfirm({
+                            title: 'Delete Partner Page',
+                            body: `This will permanently delete ${p.name}'s page. This cannot be undone.`,
+                            label: 'Delete',
+                            danger: true,
+                            action: () => setPartners(prev => prev.filter(x => x.id !== p.id)),
+                          })} style={{
                             display: 'flex', alignItems: 'center', gap: '6px',
-                            padding: '7px 13px', borderRadius: '7px',
-                            background: 'rgba(192,57,43,0.06)', color: '#c0392b',
-                            border: '1px solid rgba(192,57,43,0.2)', fontSize: '12px',
-                            fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--body-font)',
-                            transition: 'all 0.15s',
+                            padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
+                            fontWeight: 500, cursor: 'pointer',
+                            color: '#c0392b', border: '1.5px solid rgba(192,57,43,0.25)',
+                            background: '#fff', fontFamily: 'var(--body-font)', transition: 'all 0.2s',
                           }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(192,57,43,0.12)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(192,57,43,0.06)'}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#fdf2f0'; e.currentTarget.style.borderColor = '#c0392b'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(192,57,43,0.25)'; }}
                           >🗑 Delete</button>
                         </>}
-
-                        {/* Always: Edit */}
-                        <button onClick={() => setDrawer(p)} style={{
-                          display: 'flex', alignItems: 'center', gap: '6px',
-                          padding: '7px 13px', borderRadius: '7px',
-                          background: '#fff', color: '#5a6a64',
-                          border: '1px solid var(--border)', fontSize: '12px',
-                          fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--body-font)',
-                          marginLeft: 'auto', transition: 'all 0.15s',
-                        }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = '#5a6a64'; }}
-                        >✎ Edit</button>
                       </div>
                     </div>
                   );
@@ -394,10 +418,12 @@ export default function AdminPartners() {
 
                 {filtered.length === 0 && (
                   <div style={{
-                    gridColumn: '1 / -1', padding: '60px', textAlign: 'center',
+                    gridColumn: '1 / -1', padding: '80px 24px', textAlign: 'center',
                     background: '#fff', borderRadius: '16px', border: '1px solid var(--border)',
+                    color: '#8a9e96',
                   }}>
-                    <div style={{ fontSize: '13px', color: '#8a9e96' }}>No {filterStatus === 'All' ? '' : filterStatus.toLowerCase()} partners yet</div>
+                    <div style={{ fontSize: '15px', marginBottom: '6px', color: '#5a6a64' }}>No {filterStatus === 'All' ? '' : filterStatus.toLowerCase()} partners yet</div>
+                    <div style={{ fontSize: '13px' }}>Onboard your first partner to get started.</div>
                   </div>
                 )}
               </div>
