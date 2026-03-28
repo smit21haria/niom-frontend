@@ -113,16 +113,21 @@ export default function AdminPartners() {
   const [partners, setPartners] = useState(mockPartners);
   const [drawer, setDrawer] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const [mode, setMode] = useState('yourself');
+  const [linkName, setLinkName] = useState('');
+  const [generatedLink, setGeneratedLink] = useState('');
+  const [linkStepsActive, setLinkStepsActive] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Onboard form state
   const [form, setForm] = useState({
     fname: '', lname: '', slug: '', arn: '',
     waCC: '+91', waNumber: '',
     callCC: '+91', callNumber: '',
+    sameNumber: false,
     tagline: '', bio: '',
     services: [],
     referredBy: '—',
-    status: 'pending',
     photoPreview: null,
     logoPreview: null,
   });
@@ -432,293 +437,494 @@ export default function AdminPartners() {
 
           {/* ── ONBOARD PARTNER ── */}
           {activeSection === 'Onboard Partner' && (
-            <div style={{
-              background: '#fff', borderRadius: '16px',
-              border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
-              overflow: 'hidden',
-            }}>
-              {/* Form header */}
-              <div style={{ padding: '24px 36px', borderBottom: '1px solid var(--border)' }}>
-                <span style={sectionHead}>Onboard New Partner</span>
-                <p style={{ fontSize: '13px', color: '#8a9e96', marginTop: '6px' }}>
-                  Fill in the partner's details to create their micro-site page.
-                </p>
+            <div style={{ maxWidth: '860px' }}>
+
+              {/* Success banner */}
+              {submitted && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  background: 'rgba(44,74,62,0.08)', border: '1px solid rgba(44,74,62,0.2)',
+                  borderRadius: '10px', padding: '16px 20px', marginBottom: '24px',
+                }}>
+                  <span style={{ fontSize: '18px' }}>✓</span>
+                  <p style={{ fontSize: '14px', color: 'var(--green)', fontWeight: 500 }}>
+                    Partner page created successfully! — share the preview link or go to the partner list to manage it.
+                  </p>
+                  <button onClick={() => setSubmitted(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#8a9e96' }}>✕</button>
+                </div>
+              )}
+
+              {/* Mode toggle */}
+              <div style={{
+                display: 'flex', gap: '0', background: '#fff',
+                border: '1px solid var(--border)', borderRadius: '10px',
+                padding: '4px', width: 'fit-content', marginBottom: '32px',
+                boxShadow: 'var(--shadow)',
+              }}>
+                {[
+                  { key: 'yourself', label: '✏ Fill it yourself' },
+                  { key: 'link', label: '↗ Send a link' },
+                ].map(m => (
+                  <button key={m.key} onClick={() => setMode(m.key)} style={{
+                    padding: '10px 24px', borderRadius: '7px',
+                    fontFamily: 'var(--body-font)', fontSize: '13px', fontWeight: 500,
+                    letterSpacing: '0.04em', cursor: 'pointer', border: 'none',
+                    background: mode === m.key ? 'var(--green)' : 'none',
+                    color: mode === m.key ? 'var(--ivory)' : '#8a9e96',
+                    transition: 'all 0.2s',
+                    boxShadow: mode === m.key ? '0 2px 8px rgba(44,74,62,0.2)' : 'none',
+                  }}>{m.label}</button>
+                ))}
               </div>
 
-              <div style={{ padding: '36px' }}>
+              {/* ── FILL YOURSELF PANEL ── */}
+              {mode === 'yourself' && (
+                <div style={{
+                  background: '#fff', borderRadius: '16px',
+                  boxShadow: 'var(--shadow)', border: '1px solid var(--border)',
+                  overflow: 'hidden',
+                }}>
 
-                {/* Section: Basic Info */}
-                <div style={{ marginBottom: '32px' }}>
-                  <div style={{ ...tabLabel, fontSize: '10px', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid var(--border)' }}>
-                    Basic Information
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                    <div>
-                      <Label>First Name</Label>
-                      <input value={form.fname} onChange={e => {
-                        updateForm('fname', e.target.value);
-                        const slug = (e.target.value + '-' + form.lname).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-                        updateForm('slug', slug);
-                      }}
-                        placeholder="Arjun" style={inputStyle}
-                        onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                        onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+                  {/* Section: Basic Information */}
+                  <div style={{ padding: '32px 40px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--gold)', fontWeight: 600, marginBottom: '24px' }}>
+                      Basic Information
                     </div>
-                    <div>
-                      <Label>Last Name</Label>
-                      <input value={form.lname} onChange={e => {
-                        updateForm('lname', e.target.value);
-                        const slug = (form.fname + '-' + e.target.value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-                        updateForm('slug', slug);
-                      }}
-                        placeholder="Mehta" style={inputStyle}
-                        onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                        onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-                    </div>
-                    <div>
-                      <Label>Page URL Slug</Label>
-                      <input value={form.slug || ''} onChange={e => updateForm('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                        placeholder="arjun-mehta" style={inputStyle}
-                        onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                        onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-                      <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'var(--sage)', borderRadius: '8px' }}>
-                        <span style={{ fontSize: '13px', color: 'var(--green)', fontFamily: 'monospace' }}>
-                          niomfintech.in/<strong>{form.slug || 'arjun-mehta'}</strong>
-                        </span>
-                        <button onClick={() => navigator.clipboard.writeText(`niomfintech.in/${form.slug || ''}`)} style={{
-                          marginLeft: 'auto', padding: '4px 10px', borderRadius: '6px', fontSize: '11px',
-                          border: '1px solid var(--border)', background: '#fff', color: '#8a9e96', cursor: 'pointer',
-                        }}>Copy</button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      {/* First name */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>First Name</label>
+                        <input value={form.fname} onChange={e => {
+                          const v = e.target.value;
+                          updateForm('fname', v);
+                          updateForm('slug', (v + '-' + form.lname).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+                        }} placeholder="Arjun" style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
+                          onFocus={e => e.target.style.borderColor = 'var(--green)'}
+                          onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+                      </div>
+                      {/* Last name */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>Last Name</label>
+                        <input value={form.lname} onChange={e => {
+                          const v = e.target.value;
+                          updateForm('lname', v);
+                          updateForm('slug', (form.fname + '-' + v).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+                        }} placeholder="Mehta" style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
+                          onFocus={e => e.target.style.borderColor = 'var(--green)'}
+                          onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+                      </div>
+                      {/* Slug */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>Page URL Slug</label>
+                        <input value={form.slug} onChange={e => updateForm('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                          placeholder="arjun-mehta"
+                          style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
+                          onFocus={e => e.target.style.borderColor = 'var(--green)'}
+                          onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+                        <span style={{ fontSize: '12px', color: '#9aaa9e' }}>Only lowercase letters, numbers, hyphens</span>
+                      </div>
+                      {/* ARN */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>ARN Number</label>
+                        <input value={form.arn} onChange={e => updateForm('arn', e.target.value)}
+                          placeholder="ARN-XXXXXX"
+                          style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
+                          onFocus={e => e.target.style.borderColor = 'var(--green)'}
+                          onBlur={e => e.target.style.borderColor = 'var(--border)'} />
                       </div>
                     </div>
-                    <div>
-                      <Label>Sub-ARN Number</Label>
-                      <input value={form.arn} onChange={e => updateForm('arn', e.target.value)}
-                        placeholder="ARN-XXXXX" style={inputStyle}
-                        onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                        onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+                    {/* URL preview */}
+                    <div style={{ marginTop: '16px', background: 'var(--sage)', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '13px', color: '#4a6a5e', flex: 1 }}>
+                        niomfintech.in/<strong style={{ color: 'var(--green)' }}>{form.slug || 'partner-name'}</strong>
+                      </span>
+                      <button onClick={() => navigator.clipboard.writeText(`niomfintech.in/${form.slug || ''}`)}
+                        style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--body-font)', transition: 'all 0.2s' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = 'var(--ivory)'; e.currentTarget.style.borderColor = 'var(--green)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                      >Copy URL</button>
                     </div>
                   </div>
 
-                  {/* Referred By */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <Label>Referred By (MLM Upline)</Label>
-                    <select value={form.referredBy} onChange={e => updateForm('referredBy', e.target.value)}
-                      style={{ ...inputStyle, appearance: 'none', cursor: 'pointer' }}>
-                      <option value="—">— Direct (no referral)</option>
-                      {mockPartners.map(p => (
-                        <option key={p.id} value={p.name}>{p.name} · {p.arn}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                  {/* Section: Profile */}
+                  <div style={{ padding: '32px 40px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--gold)', fontWeight: 600, marginBottom: '24px' }}>
+                      Profile
+                    </div>
 
-                {/* Section: Profile */}
-                <div style={{ marginBottom: '32px' }}>
-                  <div style={{ ...tabLabel, fontSize: '10px', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid var(--border)' }}>
-                    Profile
-                  </div>
-
-                  {/* Photo + Logo uploads */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                    {/* Photo */}
-                    <div>
-                      <Label>Profile Photo</Label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', border: '1.5px dashed var(--border)', borderRadius: '10px', background: 'var(--sage)', cursor: 'pointer' }}>
+                    {/* Photo upload */}
+                    <div style={{ marginBottom: '20px' }}>
+                      <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '10px' }}>Profile Photo</label>
+                      <label style={{
+                        display: 'flex', alignItems: 'center', gap: '24px', cursor: 'pointer',
+                        border: '2px dashed var(--border)', borderRadius: '10px',
+                        padding: '16px 20px', background: 'var(--sage)', transition: 'border-color 0.2s, background 0.2s',
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.background = 'rgba(44,74,62,0.02)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--sage)'; }}
+                      >
                         <div style={{
-                          width: '56px', height: '56px', borderRadius: '50%',
-                          background: form.photoPreview ? 'transparent' : 'rgba(44,74,62,0.1)',
+                          width: '72px', height: '72px', borderRadius: '50%',
+                          border: '2px solid var(--gold)', flexShrink: 0, overflow: 'hidden',
+                          background: form.photoPreview ? 'transparent' : 'var(--sage)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          flexShrink: 0, overflow: 'hidden', border: '2px solid rgba(184,150,90,0.3)',
                         }}>
                           {form.photoPreview
                             ? <img src={form.photoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            : <span style={{ fontSize: '20px', color: '#8a9e96' }}>👤</span>}
+                            : <span style={{ fontSize: '24px', color: '#aaa' }}>👤</span>}
                         </div>
                         <div>
-                          <div style={{ fontSize: '13px', color: 'var(--green)', fontWeight: 500, marginBottom: '2px' }}>Click to upload photo</div>
-                          <div style={{ fontSize: '11px', color: '#8a9e96' }}>JPG or PNG, square preferred</div>
+                          <p style={{ fontSize: '14px', color: 'var(--green)', fontWeight: 500, marginBottom: '4px' }}>Click to upload photo</p>
+                          <span style={{ fontSize: '12px', color: '#9aaa9e' }}>JPG or PNG, square preferred. Max 5MB.</span>
                         </div>
-                        <input type="file" accept="image/*" style={{ display: 'none' }}
-                          onChange={e => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = ev => updateForm('photoPreview', ev.target.result);
-                              reader.readAsDataURL(file);
-                            }
-                          }} />
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+                          const file = e.target.files[0]; if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = ev => updateForm('photoPreview', ev.target.result);
+                          reader.readAsDataURL(file);
+                        }} />
                       </label>
                     </div>
 
-                    {/* Logo */}
+                    {/* Tagline */}
+                    <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>Tagline</label>
+                        <span style={{ fontSize: '12px', color: (form.tagline || '').length >= 72 ? '#c0392b' : '#9aaa9e' }}>
+                          {(form.tagline || '').length} / 80
+                        </span>
+                      </div>
+                      <input value={form.tagline} onChange={e => updateForm('tagline', e.target.value.slice(0, 80))}
+                        placeholder="Helping families invest with clarity and confidence"
+                        style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
+                        onFocus={e => e.target.style.borderColor = 'var(--green)'}
+                        onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+                    </div>
+
+                    {/* Bio */}
+                    <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>Bio</label>
+                        <span style={{ fontSize: '12px', color: (form.bio || '').length >= 270 ? '#c0392b' : '#9aaa9e' }}>
+                          {(form.bio || '').length} / 300
+                        </span>
+                      </div>
+                      <textarea value={form.bio} onChange={e => updateForm('bio', e.target.value.slice(0, 300))}
+                        placeholder="Write a short bio for the partner. This will appear on their micro-site below the tagline."
+                        rows={4}
+                        style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', resize: 'vertical', lineHeight: 1.7 }}
+                        onFocus={e => e.target.style.borderColor = 'var(--green)'}
+                        onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+                    </div>
+
+                    {/* Logo upload */}
                     <div>
-                      <Label>Firm Logo</Label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', border: '1.5px dashed var(--border)', borderRadius: '10px', background: 'var(--sage)', cursor: 'pointer' }}>
+                      <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '10px' }}>Partner Logo</label>
+                      <label style={{
+                        display: 'flex', alignItems: 'center', gap: '24px', cursor: 'pointer',
+                        border: '2px dashed var(--border)', borderRadius: '10px',
+                        padding: '16px 20px', background: 'var(--sage)', transition: 'border-color 0.2s',
+                      }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                      >
                         <div style={{
                           width: '80px', height: '48px', borderRadius: '6px',
-                          background: form.logoPreview ? 'transparent' : 'rgba(44,74,62,0.1)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          flexShrink: 0, overflow: 'hidden', border: '2px solid rgba(184,150,90,0.3)',
+                          border: '2px solid rgba(184,150,90,0.4)', flexShrink: 0, overflow: 'hidden',
+                          background: 'var(--sage)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
                           {form.logoPreview
                             ? <img src={form.logoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                            : <span style={{ fontSize: '18px', color: '#8a9e96' }}>🏢</span>}
+                            : <span style={{ fontSize: '18px', color: '#aaa' }}>🖼</span>}
                         </div>
                         <div>
-                          <div style={{ fontSize: '13px', color: 'var(--green)', fontWeight: 500, marginBottom: '2px' }}>Click to upload logo</div>
-                          <div style={{ fontSize: '11px', color: '#8a9e96' }}>PNG with transparent background</div>
+                          <p style={{ fontSize: '14px', color: 'var(--green)', fontWeight: 500, marginBottom: '4px' }}>Click to upload logo</p>
+                          <span style={{ fontSize: '12px', color: '#9aaa9e' }}>PNG with transparent background preferred.</span>
                         </div>
-                        <input type="file" accept="image/*" style={{ display: 'none' }}
-                          onChange={e => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = ev => updateForm('logoPreview', ev.target.result);
-                              reader.readAsDataURL(file);
-                            }
-                          }} />
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+                          const file = e.target.files[0]; if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = ev => updateForm('logoPreview', ev.target.result);
+                          reader.readAsDataURL(file);
+                        }} />
                       </label>
                     </div>
                   </div>
 
-                  {/* Tagline */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <Label>Tagline</Label>
-                      <span style={{ fontSize: '11px', color: (form.tagline || '').length > 80 ? '#c05050' : '#8a9e96' }}>
-                        {(form.tagline || '').length} / 80
-                      </span>
+                  {/* Section: Contact */}
+                  <div style={{ padding: '32px 40px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--gold)', fontWeight: 600, marginBottom: '24px' }}>
+                      Contact Details
                     </div>
-                    <input value={form.tagline} onChange={e => updateForm('tagline', e.target.value.slice(0, 80))}
-                      placeholder="Helping families invest with clarity and confidence"
-                      style={inputStyle}
-                      onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                      onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-                  </div>
 
-                  {/* Bio */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <Label>Bio</Label>
-                      <span style={{ fontSize: '11px', color: '#8a9e96' }}>{(form.bio || '').length} / 500</span>
+                    {/* Call number */}
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '8px' }}>Call Number</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <select value={form.callCC} onChange={e => updateForm('callCC', e.target.value)}
+                          style={{ width: '130px', flexShrink: 0, border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
+                          {countryCodes.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+                        </select>
+                        <input value={form.callNumber}
+                          onChange={e => {
+                            updateForm('callNumber', e.target.value);
+                            if (form.sameNumber) updateForm('waNumber', e.target.value);
+                          }}
+                          placeholder="9876543210"
+                          style={{ flex: 1, border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
+                          onFocus={e => e.target.style.borderColor = 'var(--green)'}
+                          onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+                      </div>
                     </div>
-                    <textarea value={form.bio} onChange={e => updateForm('bio', e.target.value.slice(0, 500))}
-                      placeholder="Write a short bio about yourself — your experience, your approach, and why clients trust you."
-                      rows={5} style={{ ...inputStyle, resize: 'vertical' }}
-                      onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                      onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-                  </div>
-                </div>
 
-                {/* Section: Contact */}
-                <div style={{ marginBottom: '32px' }}>
-                  <div style={{ ...tabLabel, fontSize: '10px', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid var(--border)' }}>
-                    Contact Details
-                  </div>
+                    {/* WhatsApp */}
+                    <div style={{ marginBottom: '8px' }}>
+                      <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '8px' }}>WhatsApp Number</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <select value={form.waCC} onChange={e => updateForm('waCC', e.target.value)}
+                          disabled={form.sameNumber}
+                          style={{ width: '130px', flexShrink: 0, border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', appearance: 'none', cursor: form.sameNumber ? 'not-allowed' : 'pointer', opacity: form.sameNumber ? 0.5 : 1 }}>
+                          {countryCodes.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+                        </select>
+                        <input value={form.waNumber} onChange={e => updateForm('waNumber', e.target.value)}
+                          disabled={form.sameNumber}
+                          placeholder="9876543210"
+                          style={{ flex: 1, border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', opacity: form.sameNumber ? 0.5 : 1, cursor: form.sameNumber ? 'not-allowed' : 'text' }}
+                          onFocus={e => { if (!form.sameNumber) e.target.style.borderColor = 'var(--green)'; }}
+                          onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+                      </div>
+                    </div>
 
-                  {/* Call number */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <Label>Call Number</Label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <select value={form.callCC} onChange={e => updateForm('callCC', e.target.value)}
-                        style={{ ...inputStyle, width: '130px', flexShrink: 0, appearance: 'none', cursor: 'pointer' }}>
-                        {countryCodes.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+                    {/* Same as call number */}
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#5a6a64', marginTop: '8px' }}>
+                      <input type="checkbox" checked={form.sameNumber}
+                        onChange={e => {
+                          updateForm('sameNumber', e.target.checked);
+                          if (e.target.checked) updateForm('waNumber', form.callNumber);
+                        }}
+                        style={{ accentColor: 'var(--green)', width: '15px', height: '15px' }} />
+                      Same as call number
+                    </label>
+
+                    {/* Referred By */}
+                    <div style={{ marginTop: '20px' }}>
+                      <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '8px' }}>Referred By (MLM Upline)</label>
+                      <select value={form.referredBy} onChange={e => updateForm('referredBy', e.target.value)}
+                        style={{ width: '100%', border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
+                        <option value="—">— Direct (no referral)</option>
+                        {mockPartners.map(p => <option key={p.id} value={p.name}>{p.name} · {p.arn}</option>)}
                       </select>
-                      <input value={form.callNumber} onChange={e => updateForm('callNumber', e.target.value)}
-                        placeholder="9876543210" style={inputStyle}
-                        onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                        onBlur={e => e.target.style.borderColor = 'var(--border)'} />
                     </div>
                   </div>
 
-                  {/* WhatsApp number */}
-                  <div style={{ marginBottom: '8px' }}>
-                    <Label>WhatsApp Number</Label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <select value={form.waCC} onChange={e => updateForm('waCC', e.target.value)}
-                        style={{ ...inputStyle, width: '130px', flexShrink: 0, appearance: 'none', cursor: 'pointer' }}>
-                        {countryCodes.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
-                      </select>
-                      <input value={form.waNumber} onChange={e => updateForm('waNumber', e.target.value)}
-                        placeholder="9876543210" style={inputStyle}
-                        onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                        onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+                  {/* Section: Services */}
+                  <div style={{ padding: '32px 40px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--gold)', fontWeight: 600, marginBottom: '8px' }}>
+                      Areas of Focus
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#9aaa9e', marginBottom: '20px' }}>Select exactly 3 services to display on the micro-site</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                      {[
+                        { label: 'Mutual Funds', icon: '📈' },
+                        { label: 'Insurance', icon: '🛡' },
+                        { label: 'Tax Planning', icon: '📋' },
+                        { label: 'Financial Planning', icon: '🎯' },
+                        { label: 'PMS', icon: '💼' },
+                        { label: 'NPS', icon: '🏦' },
+                        { label: 'Retirement Planning', icon: '☂' },
+                        { label: "Children's Education", icon: '🎓' },
+                        { label: 'NRI Investments', icon: '🌐' },
+                      ].map(s => {
+                        const selected = form.services.includes(s.label);
+                        const disabled = !selected && form.services.length >= 3;
+                        return (
+                          <button key={s.label} onClick={() => !disabled && toggleService(s.label)} style={{
+                            border: `1.5px solid ${selected ? 'var(--green)' : 'var(--border)'}`,
+                            borderRadius: '10px', padding: '14px 12px',
+                            cursor: disabled ? 'not-allowed' : 'pointer',
+                            textAlign: 'center', fontSize: '13px',
+                            fontWeight: selected ? 500 : 400,
+                            color: selected ? 'var(--green)' : disabled ? '#ccc' : '#5a6a64',
+                            background: selected ? 'rgba(44,74,62,0.07)' : 'var(--ivory)',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+                            opacity: disabled ? 0.4 : 1,
+                            transition: 'all 0.2s', fontFamily: 'var(--body-font)',
+                          }}
+                            onMouseEnter={e => { if (!disabled && !selected) { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.background = 'rgba(44,74,62,0.03)'; }}}
+                            onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = disabled ? '#ccc' : '#5a6a64'; e.currentTarget.style.background = 'var(--ivory)'; }}}
+                          >
+                            <span style={{ fontSize: '18px' }}>{s.icon}</span>
+                            {s.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ fontSize: '12px', color: form.services.length === 3 ? 'var(--green)' : '#9aaa9e', marginTop: '10px', fontWeight: form.services.length === 3 ? 500 : 400 }}>
+                      {form.services.length} of 3 selected
                     </div>
                   </div>
 
-                  {/* Same as call number checkbox */}
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#5a6a64', marginBottom: '4px' }}>
-                    <input type="checkbox"
-                      onChange={e => { if (e.target.checked) updateForm('waNumber', form.callNumber); }}
-                      style={{ accentColor: 'var(--green)', width: '14px', height: '14px' }} />
-                    Same as call number
-                  </label>
-                </div>
-
-                {/* Section: Services */}
-                <div style={{ marginBottom: '32px' }}>
-                  <div style={{ ...tabLabel, fontSize: '10px', marginBottom: '8px', paddingBottom: '10px', borderBottom: '1px solid var(--border)' }}>
-                    Areas of Focus
-                  </div>
-                  <p style={{ fontSize: '12px', color: '#8a9e96', marginBottom: '16px' }}>Select exactly 3 services to display on the micro-site</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                    {[
-                      'Mutual Funds', 'Insurance', 'Tax Planning',
-                      'Financial Planning', 'PMS', 'NPS',
-                      'Retirement Planning', "Children's Education", 'NRI Investments',
-                    ].map(s => {
-                      const selected = form.services.includes(s);
-                      const disabled = !selected && form.services.length >= 3;
-                      return (
-                        <button key={s} onClick={() => !disabled && toggleService(s)} style={{
-                          padding: '14px 10px', borderRadius: '10px', fontSize: '13px',
-                          border: `1.5px solid ${selected ? 'var(--green)' : 'var(--border)'}`,
-                          background: selected ? 'rgba(44,74,62,0.07)' : '#fff',
-                          color: selected ? 'var(--green)' : disabled ? '#bbb' : '#5a6a64',
-                          cursor: disabled ? 'not-allowed' : 'pointer',
-                          fontWeight: selected ? 500 : 400,
-                          opacity: disabled ? 0.5 : 1,
-                          transition: 'all 0.2s', fontFamily: 'var(--body-font)',
-                        }}>
-                          {s}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div style={{ fontSize: '12px', color: form.services.length === 3 ? 'var(--green)' : '#8a9e96', marginTop: '10px', fontWeight: form.services.length === 3 ? 500 : 400 }}>
-                    {form.services.length} of 3 selected
+                  {/* Form footer */}
+                  <div style={{
+                    padding: '24px 40px', background: 'var(--sage)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
+                  }}>
+                    <span style={{ fontSize: '13px', color: '#8a9e96' }}>This will generate the partner's micro-site page.</span>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <button onClick={() => {
+                        setForm({ fname: '', lname: '', slug: '', arn: '', waCC: '+91', waNumber: '', callCC: '+91', callNumber: '', sameNumber: false, tagline: '', bio: '', services: [], referredBy: '—', photoPreview: null, logoPreview: null });
+                        setSubmitted(false);
+                      }} style={{
+                        padding: '10px 20px', borderRadius: '8px', fontSize: '13px',
+                        border: '1.5px solid var(--border)', background: '#fff',
+                        color: '#5a6a64', cursor: 'pointer', fontFamily: 'var(--body-font)',
+                        transition: 'all 0.2s',
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = '#5a6a64'; }}
+                      >Clear Form</button>
+                      <button onClick={() => { if (form.services.length === 3) setSubmitted(true); }} style={{
+                        padding: '11px 28px', borderRadius: '8px', fontSize: '13px',
+                        fontWeight: 500, letterSpacing: '0.06em',
+                        background: form.services.length === 3 ? 'var(--green)' : '#ccc',
+                        color: 'var(--ivory)', border: 'none',
+                        cursor: form.services.length === 3 ? 'pointer' : 'not-allowed',
+                        fontFamily: 'var(--body-font)', transition: 'background 0.2s',
+                      }}
+                        onMouseEnter={e => { if (form.services.length === 3) e.currentTarget.style.background = 'var(--gold)'; }}
+                        onMouseLeave={e => { if (form.services.length === 3) e.currentTarget.style.background = 'var(--green)'; }}
+                      >Create Partner Page →</button>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {/* Footer */}
+              {/* ── SEND A LINK PANEL ── */}
+              {mode === 'link' && (
                 <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  paddingTop: '24px', borderTop: '1px solid var(--border)',
+                  background: '#fff', borderRadius: '16px',
+                  boxShadow: 'var(--shadow)', border: '1px solid var(--border)',
+                  maxWidth: '860px',
                 }}>
-                  <span style={{ fontSize: '13px', color: '#8a9e96' }}>This will create the partner's micro-site page.</span>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <button onClick={() => {
-                      setForm({ fname: '', lname: '', slug: '', arn: '', waCC: '+91', waNumber: '', callCC: '+91', callNumber: '', tagline: '', bio: '', services: [], referredBy: '—', status: 'pending', photoPreview: null, logoPreview: null });
-                      setSubmitted(false);
-                    }} style={{
-                      padding: '10px 20px', borderRadius: '8px', background: 'transparent',
-                      color: '#8a9e96', border: '1.5px solid var(--border)', fontSize: '13px', cursor: 'pointer',
-                    }}>Clear Form</button>
-                    <button onClick={() => setSubmitted(true)} style={{
-                      padding: '12px 32px', borderRadius: '8px',
-                      background: form.services.length === 3 ? 'var(--green)' : '#ccc',
-                      color: 'var(--ivory)', border: 'none', fontSize: '13px', fontWeight: 500,
-                      cursor: form.services.length === 3 ? 'pointer' : 'not-allowed', letterSpacing: '0.06em',
-                    }}
-                      onMouseEnter={e => { if (form.services.length === 3) e.currentTarget.style.background = 'var(--gold)'; }}
-                      onMouseLeave={e => { if (form.services.length === 3) e.currentTarget.style.background = 'var(--green)'; }}
-                    >Create Partner Page →</button>
-                    {submitted && <span style={{ fontSize: '13px', color: 'var(--green)', fontWeight: 500 }}>✓ Created</span>}
+                  <div style={{ padding: '40px' }}>
+                    <div style={{ fontFamily: 'var(--display-font)', fontSize: '26px', fontWeight: 600, color: 'var(--green)', marginBottom: '8px' }}>
+                      Send Onboarding Link
+                    </div>
+                    <p style={{ fontSize: '14px', color: '#8a9e96', fontWeight: 300, lineHeight: 1.7, marginBottom: '32px' }}>
+                      Generate a unique link and send it to your partner. They'll fill in their own details and the page will be created once you approve.
+                    </p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+
+                      {/* Step 1 */}
+                      <div style={{ display: 'flex', gap: '20px', padding: '20px 0', borderBottom: '1px solid var(--border)' }}>
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '50%',
+                          background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0, marginTop: '2px',
+                        }}>1</div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontSize: '14px', color: 'var(--charcoal)', marginBottom: '6px' }}>Enter the partner's full name to generate their unique link</p>
+                          <div style={{ display: 'flex', gap: '10px', marginTop: '12px', alignItems: 'center' }}>
+                            <input
+                              value={linkName}
+                              onChange={e => setLinkName(e.target.value)}
+                              placeholder="Partner's full name (e.g. Priya Sharma)"
+                              style={{
+                                flex: 1, border: '1.5px solid var(--border)', borderRadius: '8px',
+                                padding: '11px 14px', fontFamily: 'var(--body-font)', fontSize: '14px',
+                                color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', transition: 'border-color 0.2s',
+                              }}
+                              onFocus={e => e.target.style.borderColor = 'var(--green)'}
+                              onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                            />
+                            <button onClick={() => {
+                              if (!linkName.trim()) return;
+                              const slug = linkName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                              const link = `https://niom-backend.onrender.com/onboard/${slug}?token=demo123`;
+                              setGeneratedLink(link);
+                              setLinkStepsActive(true);
+                            }} style={{
+                              background: 'var(--green)', color: 'var(--ivory)',
+                              border: 'none', borderRadius: '8px',
+                              padding: '11px 20px', fontFamily: 'var(--body-font)',
+                              fontSize: '13px', fontWeight: 500, letterSpacing: '0.06em',
+                              cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.2s',
+                              display: 'flex', alignItems: 'center', gap: '8px',
+                            }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'var(--gold)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'var(--green)'}
+                            >🔗 Generate Link</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 2 */}
+                      <div style={{
+                        display: 'flex', gap: '20px', padding: '20px 0',
+                        borderBottom: '1px solid var(--border)',
+                        opacity: linkStepsActive ? 1 : 0.4,
+                        pointerEvents: linkStepsActive ? 'auto' : 'none',
+                        transition: 'opacity 0.3s',
+                      }}>
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '50%',
+                          background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0, marginTop: '2px',
+                        }}>2</div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontSize: '14px', color: 'var(--charcoal)', marginBottom: '6px' }}>Copy and share this link with your partner</p>
+                          {generatedLink && (
+                            <div style={{
+                              background: 'var(--sage)', borderRadius: '8px', padding: '12px 16px',
+                              fontSize: '13px', color: '#4a6a5e', marginTop: '12px',
+                              display: 'flex', alignItems: 'center', gap: '12px',
+                            }}>
+                              <span style={{ flex: 1, wordBreak: 'break-all' }}>{generatedLink}</span>
+                              <button onClick={() => {
+                                navigator.clipboard.writeText(generatedLink);
+                                setLinkCopied(true);
+                                setTimeout(() => setLinkCopied(false), 1500);
+                              }} style={{
+                                background: 'var(--green)', color: 'var(--ivory)',
+                                border: 'none', borderRadius: '6px',
+                                padding: '7px 14px', fontSize: '12px',
+                                fontFamily: 'var(--body-font)', cursor: 'pointer',
+                                whiteSpace: 'nowrap', transition: 'background 0.2s',
+                              }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'var(--gold)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'var(--green)'}
+                              >{linkCopied ? 'Copied!' : 'Copy'}</button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Step 3 */}
+                      <div style={{
+                        display: 'flex', gap: '20px', padding: '20px 0',
+                        opacity: linkStepsActive ? 1 : 0.4,
+                        transition: 'opacity 0.3s',
+                      }}>
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '50%',
+                          background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0, marginTop: '2px',
+                        }}>3</div>
+                        <div>
+                          <p style={{ fontSize: '14px', color: 'var(--charcoal)', marginBottom: '4px' }}>Review &amp; approve in your dashboard</p>
+                          <span style={{ fontSize: '13px', color: '#9aaa9e' }}>Once your partner submits their details, they'll appear as a pending partner in the Partner List for you to approve.</span>
+                        </div>
+                      </div>
+
+                    </div>
                   </div>
                 </div>
+              )}
 
-              </div>
             </div>
           )}
 
