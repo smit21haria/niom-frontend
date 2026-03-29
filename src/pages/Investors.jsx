@@ -71,7 +71,12 @@ export default function Investors() {
     partnersApi.list({ limit: 100 })
       .then(r => setPartnersList(Array.isArray(r) ? r : []))
       .catch(() => {});
-  }, []);
+
+  // Pre-set partner filter from URL query string
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get('partner_id');
+    if (pid) setPartnerFilter(pid);
+}, []);
 
   // Reset page on filter change
   useEffect(() => { setPage(0); }, [partnerFilter]);
