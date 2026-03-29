@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { isAuthenticated } from './lib/api';
 import Layout from './components/layout/Layout';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Partners from './pages/Partners';
 import PartnerDetail from './pages/PartnerDetail';
@@ -21,11 +23,16 @@ import AdminCommissionConfig from './pages/AdminCommissionConfig';
 import AdminBrokerage from './pages/AdminBrokerage';
 import ClientReports from './pages/ClientReports';
 
+function PrivateRoute({ children }) {
+  return isAuthenticated() ? children : <Navigate to="/login" replace />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Layout />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="partners" element={<Partners />} />
