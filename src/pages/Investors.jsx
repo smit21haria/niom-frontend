@@ -129,13 +129,25 @@ export default function Investors() {
         }
       `}</style>
 
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontFamily: 'var(--display-font)', fontSize: '34px', fontWeight: 600, color: 'var(--green)' }}>
-          Investors
-        </h1>
-        <p style={{ fontSize: '13px', color: '#8a9e96', marginTop: '4px' }}>
-          {loading ? 'Loading...' : `${total} investor${total !== 1 ? 's' : ''} across all partners`}
-        </p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '32px' }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--display-font)', fontSize: '34px', fontWeight: 600, color: 'var(--green)' }}>
+            Investors
+          </h1>
+          <p style={{ fontSize: '13px', color: '#8a9e96', marginTop: '4px' }}>
+            {loading ? 'Loading...' : `${total} investor${total !== 1 ? 's' : ''} across all partners`}
+          </p>
+        </div>
+        <button onClick={() => navigate('/admin-controls/investors')} style={{
+          background: 'var(--green)', color: 'var(--ivory)',
+          border: 'none', borderRadius: '8px',
+          padding: '10px 20px', fontSize: '13px', fontWeight: 500,
+          letterSpacing: '0.06em', cursor: 'pointer', whiteSpace: 'nowrap',
+          transition: 'background 0.2s',
+        }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--gold)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--green)'}
+        >+ Create Investor</button>
       </div>
 
       {/* Error banner */}
