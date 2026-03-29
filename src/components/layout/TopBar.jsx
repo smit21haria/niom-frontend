@@ -1,4 +1,5 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { clearToken } from '../../lib/api';
 
 const titles = {
   '/dashboard': 'Client Dashboard',
@@ -13,6 +14,8 @@ const titles = {
 
 export default function TopBar() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  function handleLogout() { clearToken(); navigate('/login', { replace: true }); }
 
   return (
     <div style={{
@@ -39,6 +42,7 @@ export default function TopBar() {
             textTransform: 'uppercase', cursor: 'pointer', background: 'none', border: 'none',
             transition: 'color 0.2s',
           }}
+          onClick={handleLogout}
           onMouseEnter={e => e.target.style.color = 'var(--gold)'}
           onMouseLeave={e => e.target.style.color = '#8a9e96'}
         >Log out</button>
