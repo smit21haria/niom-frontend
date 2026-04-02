@@ -22,6 +22,7 @@ import AdminAccessControl from './pages/AdminAccessControl';
 import AdminCommissionConfig from './pages/AdminCommissionConfig';
 import AdminBrokerage from './pages/AdminBrokerage';
 import ClientReports from './pages/ClientReports';
+import FundDetail from './pages/FundDetail'
 
 function PrivateRoute({ children }) {
   return isAuthenticated() ? children : <Navigate to="/login" replace />;
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="commission" element={<Commission />} />
           <Route path="research" element={<Navigate to="/research/funds" replace />} />
           <Route path="research/funds" element={<ResearchFunds />} />
+          <Route path="research/funds/:plan_id" element={<FundDetail />} />
           <Route path="research/compare" element={<ResearchCompare />} />
           <Route path="research/categories" element={<ResearchCategories />} />
           <Route path="research/calculators" element={<ResearchCalculators />} />

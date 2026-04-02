@@ -127,10 +127,12 @@ export const portfolio = {
 // ── Schemes (VR fund data) ────────────────────────────────────────────────────
 
 export const schemes = {
-  search: (params = {}) => get('/api/schemes/search', params),
-  get: (plan_id) => get(`/api/schemes/${plan_id}`),
-  compare: (plan_id, peers = []) => get(`/api/schemes/${plan_id}/compare`, { peers: peers.join(',') }),
-  amcs: () => get('/api/schemes/meta/amcs'),
+  search:     (params = {}) => get('/api/schemes/search', params),
+  get:        (plan_id)     => get(`/api/schemes/${plan_id}`),
+  detail:     (plan_id)     => get(`/api/schemes/${plan_id}/detail`),
+  growthChart:(plan_id)     => get(`/api/schemes/${plan_id}/growth-chart`),
+  compare:    (plan_id, peers = []) => get(`/api/schemes/${plan_id}/compare`, { peers: peers.join(',') }),
+  amcs:       () => get('/api/schemes/meta/amcs'),
   categories: () => get('/api/schemes/meta/categories'),
 };
 
