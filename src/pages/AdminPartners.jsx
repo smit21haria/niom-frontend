@@ -670,7 +670,7 @@ export default function AdminPartners() {
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--charcoal)' }}>{p.fname} {p.lname}</div>
-                            <div style={{ fontSize: '12px', color: '#9aaa9e', marginTop: '2px' }}>{p.arn || 'No ARN'}</div>
+                            <div style={{ fontSize: '12px', color: '#9aaa9e', marginTop: '2px' }}>{p.tagline || ''}</div>
                           </div>
                           <span style={{
                             fontSize: '11px', fontWeight: 600, padding: '4px 10px',
