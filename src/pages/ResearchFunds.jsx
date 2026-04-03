@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { schemes } from '../lib/api';
 
 const sectionHead = {
@@ -80,12 +80,14 @@ function formatAum(aum) {
 }
 
 export default function ResearchFunds() {
-  const navigate = useNavigate();
+  const navigate                              = useNavigate();
+  const [searchParams]                        = useSearchParams();
 
   const [searchInput, setSearchInput]           = useState('');
   const [search, setSearch]                     = useState('');
   const [selectedAmc, setSelectedAmc]           = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  // ── Pre-select category from URL param if coming from Category Analysis ──
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category_id') || '');
   const [selectedRating, setSelectedRating]     = useState('');
   const [selectedQuartile, setSelectedQuartile] = useState('');
   const [page, setPage]                         = useState(0);
