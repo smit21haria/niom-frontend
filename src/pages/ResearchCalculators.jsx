@@ -211,8 +211,6 @@ function SIPCalc() {
   const invested  = sip * months;
   const gains     = fv - invested;
   const wealthPct = invested > 0 ? (gains / invested) * 100 : 0;
-  // CAGR for SIP = the input expected return rate
-  const cagr = rate;
 
   return (
     <div>
@@ -230,7 +228,6 @@ function SIPCalc() {
           <ResultBox label="Total Invested"  value={fmt(invested)} />
           <ResultBox label="Est. Returns"    value={fmt(gains)} />
           <ResultBox label="Total Value"     value={fmt(fv)} highlight />
-          <ResultBox label="CAGR"            value={`${cagr.toFixed(1)}%`} />
           <ResultBox label="Wealth Gained"   value={`${wealthPct.toFixed(1)}%`} />
         </div>
 
@@ -252,8 +249,6 @@ function LumpsumCalc() {
   const fv        = principal * Math.pow(1 + rate / 100, years);
   const gains     = fv - principal;
   const wealthPct = principal > 0 ? (gains / principal) * 100 : 0;
-  // For lumpsum, CAGR = input rate (exact by definition)
-  const cagr = rate;
 
   return (
     <div>
@@ -270,7 +265,6 @@ function LumpsumCalc() {
           <ResultBox label="Amount Invested" value={fmt(principal)} />
           <ResultBox label="Est. Returns"    value={fmt(gains)} />
           <ResultBox label="Total Value"     value={fmt(fv)} highlight />
-          <ResultBox label="CAGR"            value={`${cagr.toFixed(1)}%`} />
           <ResultBox label="Wealth Gained"   value={`${wealthPct.toFixed(1)}%`} />
         </div>
         <div style={{ flexShrink: 0 }}>
