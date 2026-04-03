@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import KPICard from '../components/ui/KPICard';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { partners as partnersApi, getToken } from '../lib/api';
 
+const BASE = import.meta.env.VITE_API_URL || 'https://niom-backend.onrender.com';
+
+// ── Design tokens ─────────────────────────────────────────────────────────────
 const sectionHead = {
   fontFamily: 'var(--display-font)',
   fontSize: '22px',
@@ -17,49 +19,207 @@ const tabLabel = {
   fontWeight: 600,
 };
 
-const inputStyle = {
-  width: '100%', padding: '10px 14px',
-  border: '1.5px solid var(--border)', borderRadius: '8px',
-  fontSize: '14px', fontFamily: 'var(--body-font)',
-  color: 'var(--charcoal)', background: '#fff', outline: 'none',
-};
+// ── Country codes — full list, identical to admin-panel.html ──────────────────
+const COUNTRY_CODES = [
+  { code: '+91',   label: 'India' },
+  { code: '+1',    label: 'USA / Canada' },
+  { code: '+44',   label: 'UK' },
+  { code: '+971',  label: 'UAE' },
+  { code: '+65',   label: 'Singapore' },
+  { code: '+61',   label: 'Australia' },
+  { code: '+852',  label: 'Hong Kong' },
+  { code: '+41',   label: 'Switzerland' },
+  { code: '+49',   label: 'Germany' },
+  { code: '+33',   label: 'France' },
+  { code: '+81',   label: 'Japan' },
+  { code: '+82',   label: 'South Korea' },
+  { code: '+86',   label: 'China' },
+  { code: '+60',   label: 'Malaysia' },
+  { code: '+66',   label: 'Thailand' },
+  { code: '+62',   label: 'Indonesia' },
+  { code: '+63',   label: 'Philippines' },
+  { code: '+84',   label: 'Vietnam' },
+  { code: '+94',   label: 'Sri Lanka' },
+  { code: '+92',   label: 'Pakistan' },
+  { code: '+880',  label: 'Bangladesh' },
+  { code: '+977',  label: 'Nepal' },
+  { code: '+64',   label: 'New Zealand' },
+  { code: '+27',   label: 'South Africa' },
+  { code: '+234',  label: 'Nigeria' },
+  { code: '+254',  label: 'Kenya' },
+  { code: '+20',   label: 'Egypt' },
+  { code: '+212',  label: 'Morocco' },
+  { code: '+966',  label: 'Saudi Arabia' },
+  { code: '+974',  label: 'Qatar' },
+  { code: '+973',  label: 'Bahrain' },
+  { code: '+968',  label: 'Oman' },
+  { code: '+965',  label: 'Kuwait' },
+  { code: '+972',  label: 'Israel' },
+  { code: '+90',   label: 'Turkey' },
+  { code: '+7',    label: 'Russia' },
+  { code: '+48',   label: 'Poland' },
+  { code: '+31',   label: 'Netherlands' },
+  { code: '+32',   label: 'Belgium' },
+  { code: '+34',   label: 'Spain' },
+  { code: '+39',   label: 'Italy' },
+  { code: '+351',  label: 'Portugal' },
+  { code: '+46',   label: 'Sweden' },
+  { code: '+47',   label: 'Norway' },
+  { code: '+45',   label: 'Denmark' },
+  { code: '+353',  label: 'Ireland' },
+  { code: '+43',   label: 'Austria' },
+  { code: '+55',   label: 'Brazil' },
+  { code: '+54',   label: 'Argentina' },
+  { code: '+52',   label: 'Mexico' },
+  { code: '+57',   label: 'Colombia' },
+  { code: '+56',   label: 'Chile' },
+  { code: '+51',   label: 'Peru' },
+  { code: '+30',   label: 'Greece' },
+  { code: '+36',   label: 'Hungary' },
+  { code: '+420',  label: 'Czech Republic' },
+  { code: '+358',  label: 'Finland' },
+  { code: '+1345', label: 'Cayman Islands' },
+  { code: '+1284', label: 'British Virgin Islands' },
+];
 
-function Label({ children }) {
-  return <div style={{ ...tabLabel, fontSize: '10px', marginBottom: '6px' }}>{children}</div>;
+function ccFmt(code) {
+  const found = COUNTRY_CODES.find(c => c.code === code);
+  return found ? `${found.code} (${found.label})` : code;
 }
 
-const mockPartners = [
-  { id: 1, name: 'Aakash Shethia', arn: 'ARN-12345', status: 'live', aum: '₹2.4 Cr', aumChange: '+4.2%', investors: 18, sip: '₹1,20,000', sipCount: 24, commission: '₹8,400', leads: 6, lastTxn: '22 Mar 2026', referredBy: '—' },
-  { id: 2, name: 'Priya Mehta', arn: 'ARN-67890', status: 'live', aum: '₹1.1 Cr', aumChange: '+1.8%', investors: 9, sip: '₹45,000', sipCount: 11, commission: '₹3,200', leads: 2, lastTxn: '20 Mar 2026', referredBy: 'Aakash Shethia' },
-  { id: 3, name: 'Rahul Sharma', arn: 'ARN-11223', status: 'pending', aum: '₹0', aumChange: '—', investors: 0, sip: '₹0', sipCount: 0, commission: '₹0', leads: 1, lastTxn: '—', referredBy: '—' },
-  { id: 4, name: 'Neha Gupta', arn: 'ARN-44556', status: 'paused', aum: '₹78 L', aumChange: '-0.3%', investors: 5, sip: '₹22,000', sipCount: 6, commission: '₹1,100', leads: 0, lastTxn: '10 Mar 2026', referredBy: 'Priya Mehta' },
+// ── Services — identical to admin-panel.html ──────────────────────────────────
+const SERVICES = [
+  { label: 'Mutual Funds',        icon: '📈' },
+  { label: 'SIP Planning',        icon: '📊' },
+  { label: 'Goal-Based Investing',icon: '🎯' },
+  { label: 'Tax Saving (ELSS)',   icon: '🛡' },
+  { label: 'Retirement Planning', icon: '☂' },
+  { label: "Children's Education",icon: '🎓' },
+  { label: 'NRI Investments',     icon: '🌐' },
 ];
 
-const statusColor = {
-  live: { bg: 'rgba(44,74,62,0.08)', color: 'var(--green)' },
-  pending: { bg: 'rgba(184,150,90,0.12)', color: 'var(--gold)' },
-  paused: { bg: 'rgba(200,200,200,0.2)', color: '#8a9e96' },
+// ── API helper ────────────────────────────────────────────────────────────────
+async function api(path, options = {}) {
+  const token = getToken();
+  const res = await fetch(`${BASE}${path}`, {
+    ...options,
+    headers: {
+      ...(options.body && !(options.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+  return res;
+}
+
+// ── Searchable Country Code Picker ────────────────────────────────────────────
+function CCPicker({ value, onChange, disabled = false }) {
+  const [query,    setQuery]    = useState('');
+  const [open,     setOpen]     = useState(false);
+  const [filtered, setFiltered] = useState(COUNTRY_CODES);
+  const ref = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    function handle(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        setQuery('');
+        setFiltered(COUNTRY_CODES);
+      }
+    }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, []);
+
+  const handleInput = (e) => {
+    const q = e.target.value;
+    setQuery(q);
+    const n = q.trim().toLowerCase().replace(/^\+/, '');
+    setFiltered(n
+      ? COUNTRY_CODES.filter(c =>
+          c.code.replace('+', '').startsWith(n) ||
+          c.label.toLowerCase().includes(n)
+        )
+      : COUNTRY_CODES
+    );
+  };
+
+  const select = (cc) => {
+    onChange(cc.code);
+    setQuery('');
+    setFiltered(COUNTRY_CODES);
+    setOpen(false);
+  };
+
+  const displayValue = open ? query : ccFmt(value);
+
+  return (
+    <div ref={ref} style={{ position: 'relative', width: '160px', flexShrink: 0 }}>
+      <input
+        value={displayValue}
+        onChange={handleInput}
+        onFocus={() => { setOpen(true); setQuery(''); }}
+        disabled={disabled}
+        placeholder={ccFmt(value)}
+        style={{
+          width: '100%', padding: '10px 12px',
+          border: '1.5px solid var(--border)', borderRadius: '8px',
+          fontSize: '13px', fontFamily: 'var(--body-font)',
+          color: 'var(--charcoal)', background: disabled ? 'var(--sage)' : '#fff',
+          outline: 'none', cursor: disabled ? 'default' : 'text',
+          boxSizing: 'border-box',
+          opacity: disabled ? 0.6 : 1,
+        }}
+        onFocus={e => { if (!disabled) e.target.style.borderColor = 'var(--green)'; setOpen(true); setQuery(''); }}
+        onBlur={e => e.target.style.borderColor = 'var(--border)'}
+      />
+      {open && !disabled && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
+          background: '#fff', borderRadius: '8px', marginTop: '4px',
+          border: '1px solid var(--border)',
+          boxShadow: '0 8px 24px rgba(44,74,62,0.12)',
+          maxHeight: '200px', overflowY: 'auto',
+        }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: '12px 14px', fontSize: '12px', color: '#9aaa9e' }}>No match</div>
+          ) : filtered.map(cc => (
+            <div
+              key={cc.code}
+              onMouseDown={() => select(cc)}
+              style={{
+                padding: '9px 14px', cursor: 'pointer', fontSize: '13px',
+                color: cc.code === value ? 'var(--green)' : 'var(--charcoal)',
+                fontWeight: cc.code === value ? 600 : 400,
+                background: cc.code === value ? 'rgba(44,74,62,0.06)' : '#fff',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => { if (cc.code !== value) e.currentTarget.style.background = 'var(--sage)'; }}
+              onMouseLeave={e => { if (cc.code !== value) e.currentTarget.style.background = '#fff'; }}
+            >
+              {cc.code} ({cc.label})
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Status styles ─────────────────────────────────────────────────────────────
+const statusStyles = {
+  live:    { bg: 'rgba(44,74,62,0.08)',    color: 'var(--green)' },
+  pending: { bg: 'rgba(184,150,90,0.12)',  color: 'var(--gold)' },
+  paused:  { bg: 'rgba(200,200,200,0.2)',  color: '#8a9e96' },
 };
 
-const subSections = ['Partner List', 'Onboard Partner', 'MLM Referral Tree'];
-
-const SERVICES = [
-  'Mutual Funds', 'Insurance', 'Tax Planning',
-  'Financial Planning', 'PMS', 'NPS',
-];
-
-const countryCodes = [
-  { code: '+91', label: '🇮🇳 +91' },
-  { code: '+1', label: '🇺🇸 +1' },
-  { code: '+44', label: '🇬🇧 +44' },
-  { code: '+971', label: '🇦🇪 +971' },
-  { code: '+65', label: '🇸🇬 +65' },
-];
-
-// MLM Tree Node
-function TreeNode({ partner, level = 0 }) {
+// ── MLM Tree Node ─────────────────────────────────────────────────────────────
+function TreeNode({ partner, allPartners, level = 0 }) {
   const [expanded, setExpanded] = useState(true);
-  const children = mockPartners.filter(p => p.referredBy === partner.name);
+  const children = allPartners.filter(p =>
+    p.referred_by_slug && p.referred_by_slug === partner.slug
+  );
 
   return (
     <div style={{ marginLeft: level * 28 }}>
@@ -70,806 +230,889 @@ function TreeNode({ partner, level = 0 }) {
         marginBottom: '8px',
         cursor: children.length ? 'pointer' : 'default',
       }} onClick={() => children.length && setExpanded(v => !v)}>
-        {children.length > 0 && (
-          <span style={{
-            fontSize: '10px', color: '#8a9e96',
-            transform: expanded ? 'rotate(90deg)' : 'none',
-            display: 'inline-block', transition: 'transform 0.2s',
-          }}>▶</span>
-        )}
-        {children.length === 0 && <span style={{ width: '14px' }} />}
+        {children.length > 0 ? (
+          <span style={{ fontSize: '10px', color: '#8a9e96', transform: expanded ? 'rotate(90deg)' : 'none', display: 'inline-block', transition: 'transform 0.2s' }}>▶</span>
+        ) : <span style={{ width: '14px' }} />}
+
         <div style={{
           width: '32px', height: '32px', borderRadius: '50%',
           background: 'rgba(44,74,62,0.1)', display: 'flex',
           alignItems: 'center', justifyContent: 'center',
           fontSize: '11px', fontWeight: 600, color: 'var(--green)', flexShrink: 0,
         }}>
-          {partner.name.split(' ').map(n => n[0]).join('')}
+          {`${partner.fname?.[0] || ''}${partner.lname?.[0] || ''}`}
         </div>
+
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--charcoal)' }}>{partner.name}</div>
+          <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--charcoal)' }}>
+            {partner.fname} {partner.lname}
+          </div>
           <div style={{ fontSize: '11px', color: '#8a9e96' }}>
-            {partner.arn} · {partner.investors} investors · {partner.aum}
+            {partner.arn} · {partner.investors_count || 0} investors · {partner.aum_display || '₹0'}
           </div>
         </div>
+
         <span style={{
-          fontSize: '11px', fontWeight: 600,
-          padding: '3px 8px', borderRadius: '100px',
-          textTransform: 'uppercase', letterSpacing: '0.08em',
-          ...statusColor[partner.status],
+          fontSize: '11px', fontWeight: 600, padding: '3px 8px',
+          borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.08em',
+          ...(statusStyles[partner.status] || statusStyles.paused),
         }}>{partner.status}</span>
       </div>
+
       {expanded && children.map(child => (
-        <TreeNode key={child.id} partner={child} level={level + 1} />
+        <TreeNode key={child.id} partner={child} allPartners={allPartners} level={level + 1} />
       ))}
     </div>
   );
 }
 
+// ── Confirm dialog ────────────────────────────────────────────────────────────
+function ConfirmDialog({ confirm, setConfirm }) {
+  if (!confirm) return null;
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: '16px', padding: '32px',
+        width: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+      }}>
+        <div style={{ fontFamily: 'var(--display-font)', fontSize: '20px', fontWeight: 600, color: 'var(--green)', marginBottom: '12px' }}>
+          {confirm.title}
+        </div>
+        <div style={{ fontSize: '14px', color: '#5a6a64', lineHeight: 1.6, marginBottom: '24px' }}>
+          {confirm.body}
+        </div>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <button onClick={() => setConfirm(null)} style={{ padding: '9px 20px', borderRadius: '8px', border: '1.5px solid var(--border)', background: '#fff', color: '#8a9e96', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--body-font)' }}>
+            Cancel
+          </button>
+          <button
+            onClick={() => { confirm.action(); setConfirm(null); }}
+            style={{
+              padding: '9px 20px', borderRadius: '8px', border: 'none',
+              background: confirm.danger ? '#c0392b' : 'var(--green)',
+              color: '#fff', fontSize: '13px', fontWeight: 500,
+              cursor: 'pointer', fontFamily: 'var(--body-font)',
+            }}
+          >
+            {confirm.label}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Form initial state ────────────────────────────────────────────────────────
+const EMPTY_FORM = {
+  fname: '', lname: '', slug: '', arn: '',
+  waCC: '+91', waNumber: '',
+  callCC: '+91', callNumber: '',
+  sameNumber: false,
+  tagline: '', bio: '',
+  services: [],
+  referredBy: '',
+  photoFile: null, photoPreview: null,
+  logoFile: null,  logoPreview: null,
+};
+
+// ── Main component ────────────────────────────────────────────────────────────
 export default function AdminPartners() {
-  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('Partner List');
-  const [filterStatus, setFilterStatus] = useState('All');
-  const [partners, setPartners] = useState(mockPartners);
-  const [drawer, setDrawer] = useState(null);
-  const [confirm, setConfirm] = useState(null);
-  const [mode, setMode] = useState('yourself');
-  const [linkName, setLinkName] = useState('');
+  const [filterStatus,  setFilterStatus]  = useState('All');
+  const [partners,      setPartners]      = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [confirm,       setConfirm]       = useState(null);
+  const [mode,          setMode]          = useState('yourself');
+  const [linkName,      setLinkName]      = useState('');
   const [generatedLink, setGeneratedLink] = useState('');
   const [linkStepsActive, setLinkStepsActive] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
+  const [linkCopied,    setLinkCopied]    = useState(false);
+  const [editingId,     setEditingId]     = useState(null);
+  const [submitting,    setSubmitting]    = useState(false);
+  const [successMsg,    setSuccessMsg]    = useState('');
+  const [form,          setForm]          = useState({ ...EMPTY_FORM });
 
-  // Onboard form state
-  const [form, setForm] = useState({
-    fname: '', lname: '', slug: '', arn: '',
-    waCC: '+91', waNumber: '',
-    callCC: '+91', callNumber: '',
-    sameNumber: false,
-    tagline: '', bio: '',
-    services: [],
-    referredBy: '—',
-    photoPreview: null,
-    logoPreview: null,
-  });
-  const [submitted, setSubmitted] = useState(false);
+  const photoInputRef = useRef(null);
+  const logoInputRef  = useRef(null);
 
-  const updateForm = (k, v) => { setForm(f => ({ ...f, [k]: v })); setSubmitted(false); };
-  const toggleService = (s) => {
+  const updateForm = useCallback((k, v) => setForm(f => ({ ...f, [k]: v })), []);
+
+  const toggleService = (label) => {
     setForm(f => ({
       ...f,
-      services: f.services.includes(s) ? f.services.filter(x => x !== s) : [...f.services, s],
+      services: f.services.includes(label)
+        ? f.services.filter(s => s !== label)
+        : f.services.length >= 3 ? f.services : [...f.services, label],
     }));
-    setSubmitted(false);
   };
 
-  const rootPartners = partners.filter(p => p.referredBy === '—');
-  const filtered = filterStatus === 'All'
+  // ── Load partners from API ──────────────────────────────────────────────────
+  const loadPartners = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api('/api/partners');
+      if (res.ok) {
+        const data = await res.json();
+        setPartners(Array.isArray(data) ? data : []);
+      }
+    } catch(e) {
+      console.error('Failed to load partners:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadPartners(); }, [loadPartners]);
+
+  // ── Auto-slug from first+last name ─────────────────────────────────────────
+  const autoSlug = (fname, lname) => {
+    return `${fname}-${lname}`.toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  };
+
+  // ── Partner actions ─────────────────────────────────────────────────────────
+  const approvePartner = async (id) => {
+    const res = await api(`/api/partners/${id}/status`, {
+      method: 'PATCH', body: JSON.stringify({ status: 'live' }),
+    });
+    if (res.ok) loadPartners();
+  };
+
+  const rejectPartner = async (id) => {
+    const res = await api(`/api/partners/${id}`, { method: 'DELETE' });
+    if (res.ok) loadPartners();
+  };
+
+  const goLivePartner = async (id) => {
+    const res = await api(`/api/partners/${id}/status`, {
+      method: 'PATCH', body: JSON.stringify({ status: 'live' }),
+    });
+    if (res.ok) loadPartners();
+  };
+
+  const pausePartner = async (id) => {
+    const res = await api(`/api/partners/${id}/status`, {
+      method: 'PATCH', body: JSON.stringify({ status: 'paused' }),
+    });
+    if (res.ok) loadPartners();
+  };
+
+  const deletePartner = async (id) => {
+    const res = await api(`/api/partners/${id}`, { method: 'DELETE' });
+    if (res.ok) loadPartners();
+  };
+
+  const previewPartner = (slug) => {
+    window.open(`${BASE}/${slug}`, '_blank');
+  };
+
+  const editPartner = (p) => {
+    setEditingId(p.id);
+    setForm({
+      ...EMPTY_FORM,
+      fname:      p.fname      || '',
+      lname:      p.lname      || '',
+      slug:       p.slug       || '',
+      arn:        p.arn        || '',
+      waCC:       p.wa_cc      || '+91',
+      waNumber:   p.wa_number  || '',
+      callCC:     p.call_cc    || '+91',
+      callNumber: p.call_number|| '',
+      tagline:    p.tagline    || '',
+      bio:        p.bio        || '',
+      services:   Array.isArray(p.services) ? p.services : [],
+      referredBy: p.referred_by_slug || '',
+      photoPreview: p.photo_url ? `${BASE}${p.photo_url}` : null,
+      logoPreview:  p.logo_url  ? `${BASE}${p.logo_url}`  : null,
+    });
+    setActiveSection('Onboard Partner');
+    setMode('yourself');
+  };
+
+  // ── Form submission ─────────────────────────────────────────────────────────
+  const submitForm = async () => {
+    if (!form.fname.trim() || !form.lname.trim()) {
+      alert('First and last name are required.');
+      return;
+    }
+    if (form.services.length !== 3) {
+      alert('Please select exactly 3 areas of focus.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      let photo_url = null, logo_url = null;
+
+      // Upload photo if new file selected
+      if (form.photoFile) {
+        const fd = new FormData();
+        fd.append('photo', form.photoFile);
+        const r = await api('/api/upload/photo', { method: 'POST', body: fd });
+        if (r.ok) { const d = await r.json(); photo_url = d.url; }
+      }
+
+      // Upload logo if new file selected
+      if (form.logoFile) {
+        const fd = new FormData();
+        fd.append('logo', form.logoFile);
+        const r = await api('/api/upload/logo', { method: 'POST', body: fd });
+        if (r.ok) { const d = await r.json(); logo_url = d.url; }
+      }
+
+      const payload = {
+        slug:           form.slug.trim() || autoSlug(form.fname, form.lname),
+        fname:          form.fname.trim(),
+        lname:          form.lname.trim(),
+        arn:            form.arn.trim() || null,
+        tagline:        form.tagline.trim(),
+        bio:            form.bio.trim(),
+        wa_cc:          form.waCC,
+        wa_number:      form.waNumber.trim(),
+        call_cc:        form.callCC,
+        call_number:    form.callNumber.trim(),
+        services:       form.services,
+        referred_by_slug: form.referredBy || null,
+      };
+      if (photo_url) payload.photo_url = photo_url;
+      if (logo_url)  payload.logo_url  = logo_url;
+
+      let res;
+      if (editingId) {
+        res = await api(`/api/partners/${editingId}`, {
+          method: 'PATCH', body: JSON.stringify(payload),
+        });
+      } else {
+        // Try slug; auto-increment on collision
+        res = await api('/api/partners', { method: 'POST', body: JSON.stringify(payload) });
+        if (res && res.status === 409) {
+          let suffix = 2;
+          const baseSlug = payload.slug;
+          while (res.status === 409 && suffix <= 10) {
+            payload.slug = `${baseSlug}-${suffix}`;
+            res = await api('/api/partners', { method: 'POST', body: JSON.stringify(payload) });
+            suffix++;
+          }
+        }
+      }
+
+      if (!res || !res.ok) {
+        const err = await res?.json().catch(() => ({}));
+        throw new Error(err.error || 'Something went wrong');
+      }
+
+      setSuccessMsg(editingId ? 'Partner updated successfully!' : 'Partner page created successfully!');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      resetForm();
+      loadPartners();
+      setActiveSection('Partner List');
+    } catch(e) {
+      alert('Error: ' + e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setForm({ ...EMPTY_FORM });
+  };
+
+  // ── Generate link ───────────────────────────────────────────────────────────
+  const generateLink = async () => {
+    if (!linkName.trim()) return;
+    try {
+      const res = await api('/api/partners/generate-link', {
+        method: 'POST', body: JSON.stringify({ name: linkName.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGeneratedLink(data.link);
+        setLinkStepsActive(true);
+      }
+    } catch(e) { alert('Error generating link'); }
+  };
+
+  // ── Filtered partner list ───────────────────────────────────────────────────
+  const filteredPartners = filterStatus === 'All'
     ? partners
     : partners.filter(p => p.status === filterStatus.toLowerCase());
 
+  const rootPartners = partners.filter(p => !p.referred_by_slug);
+
+  // ── Rendered ────────────────────────────────────────────────────────────────
   return (
     <div>
-      <div style={{ marginBottom: '32px' }}>
+      {/* Page header */}
+      <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontFamily: 'var(--display-font)', fontSize: '34px', fontWeight: 600, color: 'var(--green)' }}>
           Partner Management
         </h1>
       </div>
 
-      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-        {/* Sub-section selector */}
+      {/* Success banner */}
+      {successMsg && (
         <div style={{
-          width: '200px', flexShrink: 0, background: '#fff',
-          borderRadius: '12px', border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow)', overflow: 'hidden',
+          marginBottom: '20px', padding: '14px 20px', borderRadius: '10px',
+          background: 'rgba(44,74,62,0.08)', border: '1px solid rgba(44,74,62,0.2)',
+          fontSize: '14px', color: 'var(--green)', fontWeight: 500,
+          display: 'flex', alignItems: 'center', gap: '10px',
         }}>
-          {subSections.map(s => (
-            <div key={s} onClick={() => setActiveSection(s)} style={{
-              padding: '14px 16px', cursor: 'pointer', fontSize: '13px',
-              fontWeight: activeSection === s ? 600 : 400,
-              color: activeSection === s ? 'var(--green)' : '#5a6a64',
-              background: activeSection === s ? 'rgba(44,74,62,0.08)' : '#fff',
-              borderLeft: activeSection === s ? '3px solid var(--green)' : '3px solid transparent',
-              borderBottom: '1px solid var(--border)', transition: 'all 0.15s',
-            }}
-              onMouseEnter={e => { if (activeSection !== s) { e.currentTarget.style.background = 'var(--sage)'; e.currentTarget.style.color = 'var(--green)'; }}}
-              onMouseLeave={e => { if (activeSection !== s) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#5a6a64'; }}}
-            >{s}</div>
+          ✓ {successMsg}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+
+        {/* ── Sidebar ── */}
+        <div style={{
+          width: '200px', flexShrink: 0,
+          background: '#fff', borderRadius: '16px',
+          border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
+          overflow: 'hidden', position: 'sticky', top: '20px',
+        }}>
+          {['Partner List', 'Onboard Partner', 'MLM Referral Tree'].map((sec, i) => (
+            <div
+              key={sec}
+              onClick={() => { setActiveSection(sec); if (sec === 'Onboard Partner') resetForm(); }}
+              style={{
+                padding: '14px 18px', cursor: 'pointer', fontSize: '13px',
+                fontWeight: activeSection === sec ? 600 : 500,
+                color: activeSection === sec ? 'var(--green)' : 'var(--charcoal)',
+                background: activeSection === sec ? 'rgba(44,74,62,0.06)' : '#fff',
+                borderLeft: `3px solid ${activeSection === sec ? 'var(--green)' : 'transparent'}`,
+                borderBottom: i < 2 ? '1px solid var(--border)' : 'none',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { if (activeSection !== sec) e.currentTarget.style.background = 'var(--sage)'; }}
+              onMouseLeave={e => { if (activeSection !== sec) e.currentTarget.style.background = '#fff'; }}
+            >{sec}</div>
           ))}
         </div>
 
-        {/* Content */}
+        {/* ── Main content ── */}
         <div style={{ flex: 1, minWidth: 0 }}>
 
-          {/* ── PARTNER LIST ── */}
+          {/* ══ PARTNER LIST ══ */}
           {activeSection === 'Partner List' && (
             <div>
               {/* Toolbar */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {['All', 'Live', 'Pending', 'Paused'].map(f => (
-                    <button key={f} onClick={() => setFilterStatus(f)} style={{
-                      padding: '8px 18px', borderRadius: '100px',
-                      fontSize: '12px', fontWeight: 500, letterSpacing: '0.04em',
-                      border: '1.5px solid var(--border)',
-                      background: filterStatus === f ? 'var(--green)' : '#fff',
-                      color: filterStatus === f ? 'var(--ivory)' : '#7a8a84',
-                      cursor: 'pointer', transition: 'all 0.2s',
-                    }}>{f}</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                {['All', 'Live', 'Pending', 'Paused'].map(s => (
+                  <button key={s} onClick={() => setFilterStatus(s)} style={{
+                    padding: '8px 20px', borderRadius: '100px', fontSize: '13px',
+                    border: 'none', cursor: 'pointer', fontFamily: 'var(--body-font)',
+                    fontWeight: filterStatus === s ? 600 : 400,
+                    background: filterStatus === s ? 'var(--green)' : 'var(--sage)',
+                    color: filterStatus === s ? 'var(--ivory)' : '#7a8a84',
+                    transition: 'all 0.2s',
+                  }}>{s}</button>
+                ))}
+                <div style={{ marginLeft: 'auto' }}>
+                  <button
+                    onClick={() => { resetForm(); setActiveSection('Onboard Partner'); }}
+                    style={{
+                      padding: '9px 20px', borderRadius: '8px',
+                      background: 'var(--green)', color: 'var(--ivory)',
+                      border: 'none', fontSize: '13px', fontWeight: 500,
+                      cursor: 'pointer', fontFamily: 'var(--body-font)',
+                    }}
+                  >+ Add Partner</button>
+                </div>
+              </div>
+
+              {/* Partner cards grid */}
+              {loading ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+                  {[1,2,3,4].map(i => (
+                    <div key={i} style={{ height: '160px', borderRadius: '16px', background: 'linear-gradient(90deg, var(--sage) 25%, #e8eeec 50%, var(--sage) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
                   ))}
                 </div>
-                <button onClick={() => setActiveSection('Onboard Partner')} style={{
-                  padding: '9px 20px', borderRadius: '8px',
-                  background: 'var(--green)', color: 'var(--ivory)',
-                  border: 'none', fontSize: '13px', fontWeight: 500,
-                  cursor: 'pointer', letterSpacing: '0.06em',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--gold)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'var(--green)'}
-                >+ Add Partner</button>
-              </div>
-
-              {/* Confirm modal */}
-              {confirm && (
-                <div style={{
-                  position: 'fixed', inset: 0, background: 'rgba(26,43,37,0.7)',
-                  backdropFilter: 'blur(4px)', zIndex: 3000,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
-                }}>
-                  <div style={{
-                    background: 'var(--ivory)', borderRadius: '14px', padding: '40px 36px',
-                    maxWidth: '400px', width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
-                  }}>
-                    <div style={{ fontFamily: 'var(--display-font)', fontSize: '24px', fontWeight: 600, color: 'var(--green)', marginBottom: '12px' }}>
-                      {confirm.title}
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#5a6a64', lineHeight: 1.7, marginBottom: '28px' }}>
-                      {confirm.body}
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                      <button onClick={() => setConfirm(null)} style={{
-                        padding: '10px 20px', borderRadius: '8px', fontSize: '13px',
-                        border: '1.5px solid var(--border)', background: '#fff',
-                        color: '#5a6a64', cursor: 'pointer',
-                      }}>Cancel</button>
-                      <button onClick={() => { confirm.action(); setConfirm(null); }} style={{
-                        padding: '10px 24px', borderRadius: '8px', fontSize: '13px',
-                        background: confirm.danger ? '#c0392b' : 'var(--green)',
-                        color: '#fff', border: 'none', fontWeight: 500, cursor: 'pointer',
-                      }}>{confirm.label}</button>
-                    </div>
-                  </div>
+              ) : filteredPartners.length === 0 ? (
+                <div style={{ padding: '60px', textAlign: 'center', background: '#fff', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontFamily: 'var(--display-font)', fontSize: '22px', color: 'var(--green)', marginBottom: '8px' }}>No partners yet</div>
+                  <div style={{ fontSize: '13px', color: '#9aaa9e' }}>Click "Add Partner" to onboard your first partner</div>
                 </div>
-              )}
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+                  {filteredPartners.map(p => {
+                    const initials = `${p.fname?.[0] || ''}${p.lname?.[0] || ''}`;
+                    const addedDate = p.created_at
+                      ? new Date(p.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                      : '—';
+                    const st = statusStyles[p.status] || statusStyles.paused;
+                    const statusLabel = { live: '● Live', pending: '● Pending', paused: '● Paused' }[p.status] || p.status;
 
-              {/* Partners grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                {filtered.map(p => {
-                  const initials = p.name.split(' ').map(n => n[0]).join('');
-                  const slug = p.name.split(' ').join('-').toLowerCase();
-
-                  return (
-                    <div key={p.id} style={{
-                      background: '#fff', borderRadius: '14px',
-                      border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
-                      overflow: 'hidden', transition: 'box-shadow 0.2s, transform 0.2s',
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 32px rgba(44,74,62,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                    >
-                      {/* Top */}
-                      <div style={{ padding: '22px 24px 16px', display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                        <div style={{
-                          width: '52px', height: '52px', borderRadius: '50%',
-                          border: '2px solid var(--gold)', flexShrink: 0,
-                          background: 'var(--sage)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontFamily: 'var(--display-font)', fontSize: '20px', color: 'var(--green)', fontWeight: 600,
-                        }}>{initials}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: 'var(--display-font)', fontSize: '20px', fontWeight: 600, color: 'var(--green)', lineHeight: 1.1, marginBottom: '4px' }}>
-                            {p.name}
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#8a9e96', fontWeight: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {p.arn}
-                          </div>
-                        </div>
-                        {/* Status badge with dot */}
-                        <div style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '5px',
-                          padding: '4px 10px', borderRadius: '100px',
-                          fontSize: '11px', fontWeight: 500, letterSpacing: '0.06em', flexShrink: 0,
-                          background: p.status === 'live' ? '#e6f7ec' : p.status === 'pending' ? '#fef9ec' : '#f5f5f5',
-                          color: p.status === 'live' ? '#1a7a3c' : p.status === 'pending' ? '#8a6200' : '#7a7a7a',
-                        }}>
+                    return (
+                      <div key={p.id} style={{
+                        background: '#fff', borderRadius: '16px',
+                        border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
+                        overflow: 'hidden',
+                      }}>
+                        {/* Card top */}
+                        <div style={{ padding: '20px 20px 14px', display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
                           <div style={{
-                            width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
-                            background: p.status === 'live' ? '#2ecc71' : p.status === 'pending' ? '#f39c12' : '#aaa',
-                          }} />
-                          {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
+                            width: '48px', height: '48px', borderRadius: '50%', flexShrink: 0,
+                            background: 'rgba(44,74,62,0.1)', border: '2px solid var(--gold)',
+                            overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontFamily: 'var(--display-font)', fontSize: '16px', fontWeight: 600, color: 'var(--green)',
+                          }}>
+                            {p.photo_url
+                              ? <img src={`${BASE}${p.photo_url}`} alt={p.fname} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : initials
+                            }
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--charcoal)' }}>{p.fname} {p.lname}</div>
+                            <div style={{ fontSize: '12px', color: '#9aaa9e', marginTop: '2px' }}>{p.arn || 'No ARN'}</div>
+                          </div>
+                          <span style={{
+                            fontSize: '11px', fontWeight: 600, padding: '4px 10px',
+                            borderRadius: '100px', background: st.bg, color: st.color,
+                            letterSpacing: '0.06em',
+                          }}>{statusLabel}</span>
+                        </div>
+
+                        {/* Meta */}
+                        <div style={{ padding: '0 20px 14px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                          <div style={{ fontSize: '12px', color: '#8a9e96', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            🔗 <span style={{ color: 'var(--green)', fontWeight: 500 }}>niomfintech.in/{p.slug}</span>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#8a9e96', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            📅 {addedDate}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button onClick={() => previewPartner(p.slug)} style={actionBtnStyle}>👁 Preview</button>
+                          <button onClick={() => editPartner(p)} style={actionBtnStyle}>✏ Edit</button>
+
+                          {p.status === 'pending' && <>
+                            <button onClick={() => setConfirm({
+                              title: 'Approve Partner',
+                              body: `Approve ${p.fname} ${p.lname} and make their page live?`,
+                              label: 'Approve',
+                              danger: false,
+                              action: () => approvePartner(p.id),
+                            })} style={{ ...actionBtnStyle, background: 'var(--green)', color: 'var(--ivory)', border: '1.5px solid var(--green)' }}>✓ Approve</button>
+                            <button onClick={() => setConfirm({
+                              title: 'Reject Partner',
+                              body: `Reject and remove ${p.fname} ${p.lname}'s onboarding?`,
+                              label: 'Reject',
+                              danger: true,
+                              action: () => rejectPartner(p.id),
+                            })} style={{ ...actionBtnStyle, color: '#c0392b', borderColor: 'rgba(192,57,43,0.25)' }}>✕ Reject</button>
+                          </>}
+
+                          {p.status === 'live' && (
+                            <button onClick={() => setConfirm({
+                              title: 'Pause Partner Page',
+                              body: `This will take ${p.fname} ${p.lname}'s page offline.`,
+                              label: 'Pause',
+                              danger: false,
+                              action: () => pausePartner(p.id),
+                            })} style={{ ...actionBtnStyle, color: 'var(--gold)', borderColor: 'rgba(184,150,90,0.3)' }}>⏸ Pause</button>
+                          )}
+
+                          {p.status === 'paused' && <>
+                            <button onClick={() => setConfirm({
+                              title: 'Go Live',
+                              body: `Make ${p.fname} ${p.lname}'s page live again?`,
+                              label: 'Go Live',
+                              danger: false,
+                              action: () => goLivePartner(p.id),
+                            })} style={{ ...actionBtnStyle, background: 'var(--green)', color: 'var(--ivory)', border: '1.5px solid var(--green)' }}>▶ Go Live</button>
+                            <button onClick={() => setConfirm({
+                              title: 'Delete Partner',
+                              body: `Permanently delete ${p.fname} ${p.lname}'s partner page? This cannot be undone.`,
+                              label: 'Delete',
+                              danger: true,
+                              action: () => deletePartner(p.id),
+                            })} style={{ ...actionBtnStyle, color: '#c0392b', borderColor: 'rgba(192,57,43,0.25)' }}>🗑 Delete</button>
+                          </>}
                         </div>
                       </div>
-
-                      {/* Meta row: slug + date */}
-                      <div style={{ padding: '0 24px 16px', display: 'flex', gap: '16px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-                        <div style={{ fontSize: '12px', color: '#9aaa9e', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          🔗 <span style={{ color: 'var(--charcoal)', fontWeight: 500 }}>niomfintech.in/{slug}</span>
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#9aaa9e', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          📅 <span style={{ color: 'var(--charcoal)', fontWeight: 500 }}>{p.lastTxn}</span>
-                        </div>
-                      </div>
-
-                      {/* Action buttons */}
-                      <div style={{ padding: '14px 24px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {/* Preview — always */}
-                        <button onClick={() => window.open(`https://niom-backend.onrender.com/${slug}`, '_blank')} style={{
-                          display: 'flex', alignItems: 'center', gap: '6px',
-                          padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
-                          fontWeight: 500, cursor: 'pointer', border: '1.5px solid var(--border)',
-                          background: '#fff', color: '#5a6a64', fontFamily: 'var(--body-font)',
-                          transition: 'all 0.2s',
-                        }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.background = 'rgba(44,74,62,0.04)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = '#5a6a64'; e.currentTarget.style.background = '#fff'; }}
-                        >👁 Preview</button>
-
-                        {/* Edit — always */}
-                        <button onClick={() => setDrawer(p)} style={{
-                          display: 'flex', alignItems: 'center', gap: '6px',
-                          padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
-                          fontWeight: 500, cursor: 'pointer', border: '1.5px solid var(--border)',
-                          background: '#fff', color: '#5a6a64', fontFamily: 'var(--body-font)',
-                          transition: 'all 0.2s',
-                        }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.background = 'rgba(44,74,62,0.04)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = '#5a6a64'; e.currentTarget.style.background = '#fff'; }}
-                        >✎ Edit</button>
-
-                        {/* Pending: Approve + Reject */}
-                        {p.status === 'pending' && <>
-                          <button onClick={() => setConfirm({
-                            title: 'Approve & Go Live',
-                            body: `This will publish ${p.name}'s page. Are you sure?`,
-                            label: 'Approve',
-                            danger: false,
-                            action: () => setPartners(prev => prev.map(x => x.id === p.id ? { ...x, status: 'live' } : x)),
-                          })} style={{
-                            display: 'flex', alignItems: 'center', gap: '6px',
-                            padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
-                            fontWeight: 500, cursor: 'pointer',
-                            background: 'var(--green)', color: 'var(--ivory)',
-                            border: '1.5px solid var(--green)', fontFamily: 'var(--body-font)',
-                            transition: 'all 0.2s',
-                          }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#1a3a2e'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'var(--green)'}
-                          >✓ Approve</button>
-                          <button onClick={() => setConfirm({
-                            title: 'Reject Partner',
-                            body: `This will reject ${p.name}'s onboarding.`,
-                            label: 'Reject',
-                            danger: true,
-                            action: () => setPartners(prev => prev.filter(x => x.id !== p.id)),
-                          })} style={{
-                            display: 'flex', alignItems: 'center', gap: '6px',
-                            padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
-                            fontWeight: 500, cursor: 'pointer',
-                            color: '#c0392b', border: '1.5px solid rgba(192,57,43,0.25)',
-                            background: '#fff', fontFamily: 'var(--body-font)', transition: 'all 0.2s',
-                          }}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#fdf2f0'; e.currentTarget.style.borderColor = '#c0392b'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(192,57,43,0.25)'; }}
-                          >✕ Reject</button>
-                        </>}
-
-                        {/* Live: Pause */}
-                        {p.status === 'live' && (
-                          <button onClick={() => setConfirm({
-                            title: 'Pause Partner Page',
-                            body: `This will take ${p.name}'s page offline.`,
-                            label: 'Pause',
-                            danger: false,
-                            action: () => setPartners(prev => prev.map(x => x.id === p.id ? { ...x, status: 'paused' } : x)),
-                          })} style={{
-                            display: 'flex', alignItems: 'center', gap: '6px',
-                            padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
-                            fontWeight: 500, cursor: 'pointer',
-                            color: '#c0392b', border: '1.5px solid rgba(192,57,43,0.25)',
-                            background: '#fff', fontFamily: 'var(--body-font)', transition: 'all 0.2s',
-                          }}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#fdf2f0'; e.currentTarget.style.borderColor = '#c0392b'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(192,57,43,0.25)'; }}
-                          >⏸ Pause</button>
-                        )}
-
-                        {/* Paused: Go Live + Delete */}
-                        {p.status === 'paused' && <>
-                          <button onClick={() => setConfirm({
-                            title: 'Restore to Live',
-                            body: `This will re-publish ${p.name}'s page.`,
-                            label: 'Go Live',
-                            danger: false,
-                            action: () => setPartners(prev => prev.map(x => x.id === p.id ? { ...x, status: 'live' } : x)),
-                          })} style={{
-                            display: 'flex', alignItems: 'center', gap: '6px',
-                            padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
-                            fontWeight: 500, cursor: 'pointer',
-                            background: '#1a7a3c', color: '#fff',
-                            border: '1.5px solid #1a7a3c', fontFamily: 'var(--body-font)', transition: 'all 0.2s',
-                          }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#155e2e'}
-                            onMouseLeave={e => e.currentTarget.style.background = '#1a7a3c'}
-                          >▶ Go Live</button>
-                          <button onClick={() => setConfirm({
-                            title: 'Delete Partner Page',
-                            body: `This will permanently delete ${p.name}'s page. This cannot be undone.`,
-                            label: 'Delete',
-                            danger: true,
-                            action: () => setPartners(prev => prev.filter(x => x.id !== p.id)),
-                          })} style={{
-                            display: 'flex', alignItems: 'center', gap: '6px',
-                            padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
-                            fontWeight: 500, cursor: 'pointer',
-                            color: '#c0392b', border: '1.5px solid rgba(192,57,43,0.25)',
-                            background: '#fff', fontFamily: 'var(--body-font)', transition: 'all 0.2s',
-                          }}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#fdf2f0'; e.currentTarget.style.borderColor = '#c0392b'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'rgba(192,57,43,0.25)'; }}
-                          >🗑 Delete</button>
-                        </>}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {filtered.length === 0 && (
-                  <div style={{
-                    gridColumn: '1 / -1', padding: '80px 24px', textAlign: 'center',
-                    background: '#fff', borderRadius: '16px', border: '1px solid var(--border)',
-                    color: '#8a9e96',
-                  }}>
-                    <div style={{ fontSize: '15px', marginBottom: '6px', color: '#5a6a64' }}>No {filterStatus === 'All' ? '' : filterStatus.toLowerCase()} partners yet</div>
-                    <div style={{ fontSize: '13px' }}>Onboard your first partner to get started.</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ── ONBOARD PARTNER ── */}
-          {activeSection === 'Onboard Partner' && (
-  <div style={{ maxWidth: '860px' }}>
-
-    {/* Success banner */}
-    {submitted && (
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '12px',
-        background: 'rgba(44,74,62,0.08)', border: '1px solid rgba(44,74,62,0.2)',
-        borderRadius: '10px', padding: '16px 20px', marginBottom: '24px',
-      }}>
-        <span style={{ color: 'var(--green)', fontSize: '18px' }}>✓</span>
-        <p style={{ fontSize: '14px', color: 'var(--green)', fontWeight: 500 }}>
-          Partner page created successfully! — share the preview link or go to the partner list to manage it.
-        </p>
-        <button onClick={() => setSubmitted(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#8a9e96' }}>✕</button>
-      </div>
-    )}
-
-    {/* Mode toggle */}
-    <div style={{
-      display: 'flex', background: '#fff',
-      border: '1px solid var(--border)', borderRadius: '10px',
-      padding: '4px', width: 'fit-content', marginBottom: '32px',
-      boxShadow: 'var(--shadow)',
-    }}>
-      {[
-        { key: 'yourself', label: '✏ Fill it yourself' },
-        { key: 'link', label: '↗ Send a link' },
-      ].map(m => (
-        <button key={m.key} onClick={() => setMode(m.key)} style={{
-          padding: '10px 24px', borderRadius: '7px',
-          fontFamily: 'var(--body-font)', fontSize: '13px', fontWeight: 500,
-          letterSpacing: '0.04em', cursor: 'pointer', border: 'none',
-          background: mode === m.key ? 'var(--green)' : 'none',
-          color: mode === m.key ? 'var(--ivory)' : '#8a9e96',
-          boxShadow: mode === m.key ? '0 2px 8px rgba(44,74,62,0.2)' : 'none',
-          transition: 'all 0.2s',
-        }}>{m.label}</button>
-      ))}
-    </div>
-
-    {/* ── FILL YOURSELF ── */}
-    {mode === 'yourself' && (
-      <div style={{
-        background: '#fff', borderRadius: '16px',
-        boxShadow: 'var(--shadow)', border: '1px solid var(--border)',
-        overflow: 'hidden', maxWidth: '860px',
-      }}>
-
-        {/* BASIC INFORMATION */}
-        <div style={{ padding: '32px 40px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--gold)', fontWeight: 600, marginBottom: '24px' }}>Basic Information</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            {/* First Name */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>First Name</label>
-              <input value={form.fname} onChange={e => { updateForm('fname', e.target.value); updateForm('slug', (e.target.value + '-' + form.lname).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')); }}
-                placeholder="Arjun"
-                style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
-                onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-            </div>
-            {/* Last Name */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>Last Name</label>
-              <input value={form.lname} onChange={e => { updateForm('lname', e.target.value); updateForm('slug', (form.fname + '-' + e.target.value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')); }}
-                placeholder="Mehta"
-                style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
-                onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-            </div>
-            {/* Slug */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>Page URL Slug</label>
-              <input value={form.slug} onChange={e => updateForm('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                placeholder="arjun-mehta"
-                style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
-                onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-              <span style={{ fontSize: '12px', color: '#9aaa9e' }}>Only lowercase letters, numbers, hyphens</span>
-            </div>
-            {/* ARN */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>ARN Number</label>
-              <input value={form.arn} onChange={e => updateForm('arn', e.target.value)}
-                placeholder="ARN-XXXXXX"
-                style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
-                onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-            </div>
-          </div>
-
-          {/* URL Preview */}
-          <div style={{ marginTop: '16px', background: 'var(--sage)', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '13px', color: '#4a6a5e', flex: 1 }}>
-              niomfintech.in/<strong style={{ color: 'var(--green)' }}>{form.slug || 'partner-name'}</strong>
-            </span>
-            <button onClick={() => navigator.clipboard.writeText(`niomfintech.in/${form.slug || ''}`)}
-              style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--body-font)', transition: 'all 0.2s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = 'var(--ivory)'; e.currentTarget.style.borderColor = 'var(--green)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
-            >Copy URL</button>
-          </div>
-
-          {/* Referred By — below URL preview */}
-          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>Referred By (MLM Upline)</label>
-            <select value={form.referredBy} onChange={e => updateForm('referredBy', e.target.value)}
-              style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
-              <option value="—">— Direct (no referral)</option>
-              {mockPartners.map(p => <option key={p.id} value={p.name}>{p.name} · {p.arn}</option>)}
-            </select>
-          </div>
-        </div>
-
-        {/* PROFILE */}
-        <div style={{ padding: '32px 40px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--gold)', fontWeight: 600, marginBottom: '24px' }}>Profile</div>
-
-          {/* Photo upload */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '10px' }}>Profile Photo</label>
-            <div onClick={() => document.getElementById('ap-photo-input').click()}
-              style={{
-                border: '2px dashed var(--border)', borderRadius: '12px', padding: '28px',
-                display: 'flex', alignItems: 'center', gap: '24px', cursor: 'pointer',
-                transition: 'border-color 0.2s, background 0.2s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.background = 'rgba(44,74,62,0.02)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = ''; }}
-            >
-              <div style={{
-                width: '72px', height: '72px', borderRadius: '50%',
-                border: '2px solid var(--gold)', flexShrink: 0,
-                overflow: 'hidden', background: 'var(--sage)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {form.photoPreview
-                  ? <img src={form.photoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ fontSize: '24px', color: '#aaa' }}>👤</span>}
-              </div>
-              <div>
-                <p style={{ fontSize: '14px', color: 'var(--green)', fontWeight: 500, marginBottom: '4px' }}>Click to upload photo</p>
-                <span style={{ fontSize: '12px', color: '#9aaa9e' }}>JPG or PNG, square preferred. Max 5MB.</span>
-              </div>
-              <input id="ap-photo-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
-                const file = e.target.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = ev => updateForm('photoPreview', ev.target.result);
-                reader.readAsDataURL(file);
-              }} />
-            </div>
-          </div>
-
-          {/* Tagline */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-            <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>Tagline</label>
-            <input value={form.tagline} onChange={e => updateForm('tagline', e.target.value.slice(0, 80))}
-              placeholder="Helping families invest with clarity and confidence"
-              style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
-              onFocus={e => e.target.style.borderColor = 'var(--green)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-            <div style={{ fontSize: '12px', color: (form.tagline || '').length >= 72 ? '#c0392b' : '#9aaa9e', textAlign: 'right' }}>{(form.tagline || '').length} / 80</div>
-          </div>
-
-          {/* Bio */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-            <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>Bio</label>
-            <textarea value={form.bio} onChange={e => updateForm('bio', e.target.value.slice(0, 300))}
-              placeholder="Write a short bio for the partner. This will appear on their micro-site below the tagline."
-              rows={4}
-              style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', resize: 'vertical', lineHeight: 1.7 }}
-              onFocus={e => e.target.style.borderColor = 'var(--green)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-            <div style={{ fontSize: '12px', color: (form.bio || '').length >= 270 ? '#c0392b' : '#9aaa9e', textAlign: 'right' }}>{(form.bio || '').length} / 300</div>
-          </div>
-
-          {/* Logo upload */}
-          <div>
-            <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '10px' }}>Partner Logo</label>
-            <div onClick={() => document.getElementById('ap-logo-input').click()}
-              style={{
-                border: '2px dashed var(--border)', borderRadius: '12px', padding: '24px 28px',
-                display: 'flex', alignItems: 'center', gap: '24px', cursor: 'pointer',
-                transition: 'border-color 0.2s, background 0.2s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.background = 'rgba(44,74,62,0.02)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = ''; }}
-            >
-              <div style={{
-                width: '80px', height: '48px', borderRadius: '6px',
-                border: '2px solid rgba(184,150,90,0.4)', flexShrink: 0,
-                overflow: 'hidden', background: 'var(--sage)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {form.logoPreview
-                  ? <img src={form.logoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                  : <span style={{ fontSize: '20px', color: '#aaa' }}>🖼</span>}
-              </div>
-              <div>
-                <p style={{ fontSize: '14px', color: 'var(--green)', fontWeight: 500, marginBottom: '4px' }}>Click to upload logo</p>
-                <span style={{ fontSize: '12px', color: '#9aaa9e' }}>PNG with transparent background preferred. Max 5MB.</span>
-              </div>
-              <input id="ap-logo-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
-                const file = e.target.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = ev => updateForm('logoPreview', ev.target.result);
-                reader.readAsDataURL(file);
-              }} />
-            </div>
-          </div>
-        </div>
-
-        {/* CONTACT DETAILS */}
-        <div style={{ padding: '32px 40px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--gold)', fontWeight: 600, marginBottom: '24px' }}>Contact Details</div>
-
-          {/* Call number */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-            <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>Call Number</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '10px' }}>
-              <select value={form.callCC} onChange={e => updateForm('callCC', e.target.value)}
-                style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', appearance: 'none', cursor: 'pointer' }}>
-                {countryCodes.map(c => <option key={c.code} value={c.code}>{c.code} ({c.label})</option>)}
-              </select>
-              <input value={form.callNumber}
-                onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); updateForm('callNumber', v); if (form.sameNumber) updateForm('waNumber', v); }}
-                placeholder="9876543210" inputMode="numeric" maxLength={10}
-                style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none' }}
-                onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-            </div>
-          </div>
-
-          {/* Same number checkbox — BEFORE WhatsApp */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '16px', width: 'fit-content' }}>
-            <input type="checkbox" checked={form.sameNumber}
-              onChange={e => { updateForm('sameNumber', e.target.checked); if (e.target.checked) updateForm('waNumber', form.callNumber); }}
-              style={{ width: '16px', height: '16px', accentColor: 'var(--green)', cursor: 'pointer' }} />
-            <span style={{ fontSize: '13px', color: '#5a6a64' }}>WhatsApp number is the same as call number</span>
-          </label>
-
-          {/* WhatsApp number */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500 }}>WhatsApp Number</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '10px' }}>
-              <select value={form.waCC} onChange={e => updateForm('waCC', e.target.value)}
-                disabled={form.sameNumber}
-                style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', appearance: 'none', cursor: form.sameNumber ? 'not-allowed' : 'pointer', opacity: form.sameNumber ? 0.5 : 1 }}>
-                {countryCodes.map(c => <option key={c.code} value={c.code}>{c.code} ({c.label})</option>)}
-              </select>
-              <input value={form.waNumber}
-                onChange={e => updateForm('waNumber', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                disabled={form.sameNumber}
-                placeholder="9876543210" inputMode="numeric" maxLength={10}
-                style={{ border: '1.5px solid var(--border)', borderRadius: '8px', padding: '12px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', opacity: form.sameNumber ? 0.5 : 1, cursor: form.sameNumber ? 'not-allowed' : 'text' }}
-                onFocus={e => { if (!form.sameNumber) e.target.style.borderColor = 'var(--green)'; }}
-                onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-            </div>
-          </div>
-        </div>
-
-        {/* SERVICES */}
-        <div style={{ padding: '32px 40px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--gold)', fontWeight: 600, marginBottom: '24px' }}>Areas of Focus</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-            {[
-              { label: 'Mutual Funds', icon: '📈' },
-              { label: 'Insurance', icon: '🛡' },
-              { label: 'Tax Planning', icon: '📋' },
-              { label: 'Financial Planning', icon: '🎯' },
-              { label: 'PMS', icon: '💼' },
-              { label: 'NPS', icon: '🏦' },
-              { label: 'Retirement Planning', icon: '☂' },
-              { label: "Children's Education", icon: '🎓' },
-              { label: 'NRI Investments', icon: '🌐' },
-            ].map(s => {
-              const selected = form.services.includes(s.label);
-              const disabled = !selected && form.services.length >= 3;
-              return (
-                <div key={s.label}
-                  onClick={() => !disabled && toggleService(s.label)}
-                  style={{
-                    border: `1.5px solid ${selected ? 'var(--green)' : 'var(--border)'}`,
-                    borderRadius: '10px', padding: '14px 12px',
-                    cursor: disabled ? 'not-allowed' : 'pointer',
-                    textAlign: 'center', fontSize: '13px',
-                    fontWeight: selected ? 500 : 400,
-                    color: selected ? 'var(--green)' : disabled ? '#bbb' : '#5a6a64',
-                    background: selected ? 'rgba(44,74,62,0.07)' : 'var(--ivory)',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-                    opacity: disabled ? 0.4 : 1,
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => { if (!disabled && !selected) { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)'; }}}
-                  onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = disabled ? '#bbb' : '#5a6a64'; }}}
-                >
-                  <span style={{ fontSize: '18px' }}>{s.icon}</span>
-                  {s.label}
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ fontSize: '12px', color: '#9aaa9e', marginTop: '10px' }}>
-            {form.services.length} of 3 selected
-          </div>
-          {form.services.length === 0 && <div id="services-error" style={{ fontSize: '12px', color: '#c0392b', marginTop: '6px', display: 'none' }}>Please select exactly 3 areas of focus</div>}
-        </div>
-
-        {/* FORM FOOTER */}
-        <div style={{
-          padding: '24px 40px', background: 'var(--sage)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
-        }}>
-          <span style={{ fontSize: '13px', color: '#8a9e96' }}>This will generate the partner's micro-site page.</span>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => {
-              setForm({ fname: '', lname: '', slug: '', arn: '', waCC: '+91', waNumber: '', callCC: '+91', callNumber: '', sameNumber: false, tagline: '', bio: '', services: [], referredBy: '—', photoPreview: null, logoPreview: null });
-              setSubmitted(false);
-            }} style={{
-              padding: '11px 22px', borderRadius: '8px', fontSize: '13px', fontWeight: 500,
-              border: '1.5px solid var(--border)', background: '#fff', color: '#5a6a64',
-              cursor: 'pointer', fontFamily: 'var(--body-font)', transition: 'all 0.2s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = '#5a6a64'; }}
-            >Clear Form</button>
-            <button onClick={() => { if (form.services.length === 3) setSubmitted(true); }} style={{
-              padding: '11px 28px', borderRadius: '8px', fontSize: '13px', fontWeight: 500,
-              letterSpacing: '0.06em', fontFamily: 'var(--body-font)',
-              background: form.services.length === 3 ? 'var(--green)' : '#ccc',
-              color: 'var(--ivory)', border: 'none',
-              cursor: form.services.length === 3 ? 'pointer' : 'not-allowed',
-              transition: 'background 0.2s',
-            }}
-              onMouseEnter={e => { if (form.services.length === 3) e.currentTarget.style.background = 'var(--gold)'; }}
-              onMouseLeave={e => { if (form.services.length === 3) e.currentTarget.style.background = 'var(--green)'; }}
-            >Create Partner Page →</button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {/* ── SEND A LINK ── */}
-    {mode === 'link' && (
-      <div style={{
-        background: '#fff', borderRadius: '16px',
-        boxShadow: 'var(--shadow)', border: '1px solid var(--border)',
-        maxWidth: '860px',
-      }}>
-        <div style={{ padding: '40px' }}>
-          <div style={{ fontFamily: 'var(--display-font)', fontSize: '26px', fontWeight: 600, color: 'var(--green)', marginBottom: '8px' }}>Send Onboarding Link</div>
-          <p style={{ fontSize: '14px', color: '#8a9e96', fontWeight: 300, lineHeight: 1.7, marginBottom: '32px' }}>
-            Generate a unique link and send it to your partner. They'll fill in their own details and the page will be created once you approve.
-          </p>
-
-          {/* Step 1 */}
-          <div style={{ display: 'flex', gap: '20px', padding: '20px 0', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0, marginTop: '2px' }}>1</div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '14px', color: 'var(--charcoal)', marginBottom: '6px' }}>Enter the partner's full name to generate their unique link</p>
-              <div style={{ display: 'flex', gap: '10px', marginTop: '12px', alignItems: 'center' }}>
-                <input value={linkName} onChange={e => setLinkName(e.target.value)}
-                  placeholder="Partner's full name (e.g. Priya Sharma)"
-                  style={{ flex: 1, border: '1.5px solid var(--border)', borderRadius: '8px', padding: '11px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: 'var(--ivory)', outline: 'none', transition: 'border-color 0.2s' }}
-                  onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-                <button onClick={() => {
-                  if (!linkName.trim()) return;
-                  const slug = linkName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-                  setGeneratedLink(`https://niom-backend.onrender.com/onboard/${slug}?token=demo123`);
-                  setLinkStepsActive(true);
-                }} style={{
-                  background: 'var(--green)', color: 'var(--ivory)', border: 'none',
-                  borderRadius: '8px', padding: '11px 20px', fontFamily: 'var(--body-font)',
-                  fontSize: '13px', fontWeight: 500, letterSpacing: '0.06em',
-                  cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.2s',
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--gold)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'var(--green)'}
-                >🔗 Generate Link</button>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 2 */}
-          <div style={{ display: 'flex', gap: '20px', padding: '20px 0', borderBottom: '1px solid var(--border)', opacity: linkStepsActive ? 1 : 0.4, pointerEvents: linkStepsActive ? 'auto' : 'none', transition: 'opacity 0.3s' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0, marginTop: '2px' }}>2</div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '14px', color: 'var(--charcoal)', marginBottom: '6px' }}>Copy and share this link with your partner</p>
-              {generatedLink && (
-                <div style={{ background: 'var(--sage)', borderRadius: '8px', padding: '12px 16px', fontSize: '13px', color: '#4a6a5e', marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ flex: 1, wordBreak: 'break-all' }}>{generatedLink}</span>
-                  <button onClick={() => { navigator.clipboard.writeText(generatedLink); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1500); }}
-                    style={{ background: 'var(--green)', color: 'var(--ivory)', border: 'none', borderRadius: '6px', padding: '7px 14px', fontSize: '12px', fontFamily: 'var(--body-font)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--gold)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--green)'}
-                  >{linkCopied ? 'Copied!' : 'Copy'}</button>
+                    );
+                  })}
                 </div>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Step 3 */}
-          <div style={{ display: 'flex', gap: '20px', padding: '20px 0', opacity: linkStepsActive ? 1 : 0.4, transition: 'opacity 0.3s' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0, marginTop: '2px' }}>3</div>
+          {/* ══ ONBOARD PARTNER ══ */}
+          {activeSection === 'Onboard Partner' && (
             <div>
-              <p style={{ fontSize: '14px', color: 'var(--charcoal)', marginBottom: '4px' }}>Review &amp; approve in your dashboard</p>
-              <span style={{ fontSize: '13px', color: '#9aaa9e' }}>Once your partner submits their details, they'll appear as a pending partner in the Partner List for you to approve.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
-  </div>
-)}
-
-          {/* ── MLM REFERRAL TREE ── */}
-          {activeSection === 'MLM Referral Tree' && (
-            <div style={{
-              background: '#fff', borderRadius: '16px',
-              border: '1px solid var(--border)', boxShadow: 'var(--shadow)',
-              padding: '28px',
-            }}>
-              <span style={{ ...sectionHead, display: 'block', marginBottom: '24px' }}>MLM Referral Tree</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                {rootPartners.map(p => <TreeNode key={p.id} partner={p} />)}
+              {/* Mode toggle */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                {['yourself', 'link'].map(m => (
+                  <button key={m} onClick={() => setMode(m)} style={{
+                    padding: '10px 24px', borderRadius: '100px',
+                    background: mode === m ? 'var(--green)' : 'var(--sage)',
+                    color: mode === m ? 'var(--ivory)' : '#7a8a84',
+                    border: 'none', fontSize: '13px', fontWeight: 500,
+                    cursor: 'pointer', fontFamily: 'var(--body-font)', transition: 'all 0.2s',
+                  }}>
+                    {m === 'yourself' ? '✏ Fill it yourself' : '🔗 Send a link'}
+                  </button>
+                ))}
               </div>
+
+              {/* ── FILL YOURSELF ── */}
+              {mode === 'yourself' && (
+                <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+
+                  {/* Basic Information */}
+                  <div style={{ padding: '28px 32px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ ...tabLabel, marginBottom: '20px' }}>Basic Information</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <Field label="First Name">
+                        <input value={form.fname} onChange={e => {
+                          updateForm('fname', e.target.value);
+                          if (!editingId) updateForm('slug', autoSlug(e.target.value, form.lname));
+                        }} placeholder="Arjun" style={fieldInput} onFocus={fe} onBlur={fb} />
+                      </Field>
+                      <Field label="Last Name">
+                        <input value={form.lname} onChange={e => {
+                          updateForm('lname', e.target.value);
+                          if (!editingId) updateForm('slug', autoSlug(form.fname, e.target.value));
+                        }} placeholder="Mehta" style={fieldInput} onFocus={fe} onBlur={fb} />
+                      </Field>
+                      <Field label="Page URL Slug" hint="Only lowercase letters, numbers, hyphens">
+                        <input value={form.slug} onChange={e => updateForm('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} placeholder="arjun-mehta" style={fieldInput} onFocus={fe} onBlur={fb} />
+                      </Field>
+                      <Field label="ARN Number">
+                        <input value={form.arn} onChange={e => updateForm('arn', e.target.value)} placeholder="ARN-XXXXXX" style={fieldInput} onFocus={fe} onBlur={fb} />
+                      </Field>
+                    </div>
+
+                    {/* URL Preview */}
+                    <div style={{ marginTop: '16px', background: 'var(--sage)', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '13px', color: '#4a6a5e', flex: 1 }}>
+                        niomfintech.in/<strong style={{ color: 'var(--green)' }}>{form.slug || 'partner-name'}</strong>
+                      </span>
+                      <button onClick={() => navigator.clipboard.writeText(`niomfintech.in/${form.slug || ''}`)} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--body-font)' }}>
+                        Copy URL
+                      </button>
+                    </div>
+
+                    {/* Referred By */}
+                    <div style={{ marginTop: '16px' }}>
+                      <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '8px' }}>
+                        Referred By (MLM Upline)
+                      </label>
+                      <select
+                        value={form.referredBy}
+                        onChange={e => updateForm('referredBy', e.target.value)}
+                        style={{ width: '100%', border: '1.5px solid var(--border)', borderRadius: '8px', padding: '10px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: '#fff', outline: 'none' }}
+                      >
+                        <option value="">— Direct (no referral)</option>
+                        {partners.filter(p => p.status === 'live').map(p => (
+                          <option key={p.id} value={p.slug}>{p.fname} {p.lname} · {p.arn}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Profile */}
+                  <div style={{ padding: '28px 32px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ ...tabLabel, marginBottom: '20px' }}>Profile</div>
+
+                    {/* Photo upload */}
+                    <div style={{ marginBottom: '20px' }}>
+                      <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '10px' }}>Profile Photo</label>
+                      <div onClick={() => photoInputRef.current?.click()} style={{ border: '2px dashed var(--border)', borderRadius: '12px', padding: '24px', display: 'flex', alignItems: 'center', gap: '20px', cursor: 'pointer' }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                      >
+                        <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: '2px solid var(--gold)', overflow: 'hidden', background: 'var(--sage)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {form.photoPreview
+                            ? <img src={form.photoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : <span style={{ fontSize: '24px' }}>👤</span>
+                          }
+                        </div>
+                        <div>
+                          <p style={{ fontSize: '14px', color: 'var(--green)', fontWeight: 500, marginBottom: '4px' }}>Click to upload photo</p>
+                          <span style={{ fontSize: '12px', color: '#9aaa9e' }}>JPG or PNG, square preferred. Max 5MB.</span>
+                        </div>
+                        <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+                          const file = e.target.files[0];
+                          if (file) { updateForm('photoFile', file); updateForm('photoPreview', URL.createObjectURL(file)); }
+                        }} />
+                      </div>
+                    </div>
+
+                    {/* Tagline */}
+                    <Field label={`Tagline (${form.tagline.length}/80)`}>
+                      <input value={form.tagline} onChange={e => updateForm('tagline', e.target.value.slice(0, 80))} placeholder="Helping families invest with clarity and confidence" style={fieldInput} onFocus={fe} onBlur={fb} />
+                    </Field>
+
+                    {/* Bio */}
+                    <Field label={`Bio (${form.bio.length}/300)`}>
+                      <textarea value={form.bio} onChange={e => updateForm('bio', e.target.value.slice(0, 300))} rows={4} placeholder="Write a short bio for the partner. This will appear on their micro-site below the tagline." style={{ ...fieldInput, resize: 'vertical' }} onFocus={fe} onBlur={fb} />
+                    </Field>
+
+                    {/* Partner Logo */}
+                    <div style={{ marginTop: '8px' }}>
+                      <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '10px' }}>Partner Logo</label>
+                      <div onClick={() => logoInputRef.current?.click()} style={{ border: '2px dashed var(--border)', borderRadius: '12px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer' }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                      >
+                        <div style={{ width: '56px', height: '56px', borderRadius: '8px', border: '1.5px solid var(--border)', overflow: 'hidden', background: 'var(--sage)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {form.logoPreview
+                            ? <img src={form.logoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                            : <span style={{ fontSize: '20px' }}>🖼</span>
+                          }
+                        </div>
+                        <div>
+                          <p style={{ fontSize: '14px', color: 'var(--green)', fontWeight: 500, marginBottom: '4px' }}>Click to upload logo</p>
+                          <span style={{ fontSize: '12px', color: '#9aaa9e' }}>PNG with transparent background preferred. Max 5MB.</span>
+                        </div>
+                        <input ref={logoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+                          const file = e.target.files[0];
+                          if (file) { updateForm('logoFile', file); updateForm('logoPreview', URL.createObjectURL(file)); }
+                        }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact Details */}
+                  <div style={{ padding: '28px 32px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ ...tabLabel, marginBottom: '20px' }}>Contact Details</div>
+
+                    {/* Call Number */}
+                    <Field label="Call Number">
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <CCPicker value={form.callCC} onChange={v => {
+                          updateForm('callCC', v);
+                          if (form.sameNumber) updateForm('waCC', v);
+                        }} />
+                        <input value={form.callNumber} onChange={e => {
+                          const val = e.target.value.replace(/\D/g,'').slice(0,10);
+                          updateForm('callNumber', val);
+                          if (form.sameNumber) updateForm('waNumber', val);
+                        }} placeholder="9876543210" maxLength={10} inputMode="numeric" style={{ ...fieldInput, flex: 1 }} onFocus={fe} onBlur={fb} />
+                      </div>
+                    </Field>
+
+                    {/* Same number checkbox */}
+                    <div style={{ margin: '12px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input type="checkbox" id="sameNum" checked={form.sameNumber} onChange={e => {
+                        const checked = e.target.checked;
+                        updateForm('sameNumber', checked);
+                        if (checked) { updateForm('waCC', form.callCC); updateForm('waNumber', form.callNumber); }
+                      }} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--green)' }} />
+                      <label htmlFor="sameNum" style={{ fontSize: '13px', color: '#5a6a64', cursor: 'pointer' }}>
+                        WhatsApp number is the same as call number
+                      </label>
+                    </div>
+
+                    {/* WhatsApp Number */}
+                    <Field label="WhatsApp Number">
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <CCPicker value={form.waCC} onChange={v => updateForm('waCC', v)} disabled={form.sameNumber} />
+                        <input
+                          value={form.waNumber}
+                          onChange={e => updateForm('waNumber', e.target.value.replace(/\D/g,'').slice(0,10))}
+                          placeholder="9876543210" maxLength={10} inputMode="numeric" disabled={form.sameNumber}
+                          style={{ ...fieldInput, flex: 1, opacity: form.sameNumber ? 0.6 : 1, cursor: form.sameNumber ? 'default' : 'text', background: form.sameNumber ? 'var(--sage)' : '#fff' }}
+                          onFocus={fe} onBlur={fb}
+                        />
+                      </div>
+                    </Field>
+                  </div>
+
+                  {/* Areas of Focus */}
+                  <div style={{ padding: '28px 32px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '20px' }}>
+                      <span style={tabLabel}>Areas of Focus</span>
+                      <span style={{ fontSize: '11px', color: '#9aaa9e', fontWeight: 300 }}>— pick exactly 3</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                      {SERVICES.map(s => {
+                        const sel  = form.services.includes(s.label);
+                        const dis  = !sel && form.services.length >= 3;
+                        return (
+                          <div key={s.label}
+                            onClick={() => !dis && toggleService(s.label)}
+                            style={{
+                              border: `1.5px solid ${sel ? 'var(--green)' : 'var(--border)'}`,
+                              borderRadius: '10px', padding: '14px 12px',
+                              cursor: dis ? 'not-allowed' : 'pointer',
+                              textAlign: 'center', fontSize: '13px',
+                              fontWeight: sel ? 500 : 400,
+                              color: sel ? 'var(--green)' : dis ? '#bbb' : '#5a6a64',
+                              background: sel ? 'rgba(44,74,62,0.07)' : 'var(--ivory)',
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+                              opacity: dis ? 0.4 : 1, transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={e => { if (!dis && !sel) { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)'; }}}
+                            onMouseLeave={e => { if (!sel) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = dis ? '#bbb' : '#5a6a64'; }}}
+                          >
+                            <span style={{ fontSize: '20px' }}>{s.icon}</span>
+                            <span>{s.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ marginTop: '12px', fontSize: '12px', color: '#9aaa9e' }}>
+                      {form.services.length} of 3 selected
+                    </div>
+                  </div>
+
+                  {/* Form footer */}
+                  <div style={{ padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '13px', color: '#9aaa9e' }}>
+                      {editingId ? 'Save changes to update this partner.' : "This will generate the partner's micro-site page."}
+                    </span>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button onClick={resetForm} style={{ padding: '10px 20px', borderRadius: '8px', background: 'transparent', color: '#8a9e96', border: '1.5px solid var(--border)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--body-font)' }}>
+                        Clear Form
+                      </button>
+                      <button
+                        onClick={submitForm}
+                        disabled={submitting}
+                        style={{ padding: '10px 24px', borderRadius: '8px', background: submitting ? '#9aaa9e' : 'var(--green)', color: 'var(--ivory)', border: 'none', fontSize: '13px', fontWeight: 500, cursor: submitting ? 'default' : 'pointer', fontFamily: 'var(--body-font)' }}
+                        onMouseEnter={e => { if (!submitting) e.currentTarget.style.background = 'var(--gold)'; }}
+                        onMouseLeave={e => { if (!submitting) e.currentTarget.style.background = 'var(--green)'; }}
+                      >
+                        {submitting ? 'Saving...' : editingId ? 'Save Changes →' : 'Create Partner Page →'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── SEND A LINK ── */}
+              {mode === 'link' && (
+                <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '40px' }}>
+                  <div style={{ fontFamily: 'var(--display-font)', fontSize: '26px', fontWeight: 600, color: 'var(--green)', marginBottom: '8px' }}>Send Onboarding Link</div>
+                  <p style={{ fontSize: '14px', color: '#8a9e96', fontWeight: 300, lineHeight: 1.7, marginBottom: '32px' }}>
+                    Generate a unique link and send it to your partner. They'll fill in their own details and the page will be created once you approve.
+                  </p>
+
+                  {/* Step 1 */}
+                  <div style={{ display: 'flex', gap: '20px', padding: '20px 0', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0 }}>1</div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: '14px', color: 'var(--charcoal)', marginBottom: '12px' }}>Enter the partner's full name to generate their unique link</p>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <input
+                          value={linkName}
+                          onChange={e => setLinkName(e.target.value)}
+                          placeholder="Partner's full name (e.g. Priya Sharma)"
+                          style={{ ...fieldInput, flex: 1 }}
+                          onFocus={fe} onBlur={fb}
+                        />
+                        <button onClick={generateLink} style={{ padding: '10px 20px', borderRadius: '8px', background: 'var(--green)', color: 'var(--ivory)', border: 'none', fontSize: '13px', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'var(--body-font)' }}>
+                          🔗 Generate Link
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div style={{ display: 'flex', gap: '20px', padding: '20px 0', borderBottom: '1px solid var(--border)', opacity: linkStepsActive ? 1 : 0.4, transition: 'opacity 0.3s', pointerEvents: linkStepsActive ? 'auto' : 'none' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0 }}>2</div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: '14px', color: 'var(--charcoal)', marginBottom: '12px' }}>Copy and share this link with your partner</p>
+                      {generatedLink && (
+                        <div style={{ background: 'var(--sage)', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ flex: 1, fontSize: '13px', color: 'var(--green)', wordBreak: 'break-all' }}>{generatedLink}</span>
+                          <button onClick={() => {
+                            navigator.clipboard.writeText(generatedLink);
+                            setLinkCopied(true);
+                            setTimeout(() => setLinkCopied(false), 2000);
+                          }} style={{ background: 'var(--green)', color: 'var(--ivory)', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'var(--body-font)' }}>
+                            {linkCopied ? 'Copied!' : 'Copy'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div style={{ display: 'flex', gap: '20px', padding: '20px 0', opacity: linkStepsActive ? 1 : 0.4, transition: 'opacity 0.3s' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0 }}>3</div>
+                    <div>
+                      <p style={{ fontSize: '14px', color: 'var(--charcoal)', marginBottom: '4px' }}>Review & approve in your dashboard</p>
+                      <span style={{ fontSize: '13px', color: '#9aaa9e' }}>Once your partner submits their details, they'll appear as a pending partner in the Partner List for you to approve.</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ══ MLM REFERRAL TREE ══ */}
+          {activeSection === 'MLM Referral Tree' && (
+            <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '28px' }}>
+              <span style={{ ...sectionHead, display: 'block', marginBottom: '24px' }}>MLM Referral Tree</span>
+              {loading ? (
+                <div style={{ height: '200px', borderRadius: '10px', background: 'linear-gradient(90deg, var(--sage) 25%, #e8eeec 50%, var(--sage) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                  {rootPartners.map(p => (
+                    <TreeNode key={p.id} partner={p} allPartners={partners} />
+                  ))}
+                  {rootPartners.length === 0 && (
+                    <div style={{ padding: '40px', textAlign: 'center', color: '#9aaa9e', fontSize: '13px' }}>
+                      No partners yet
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
         </div>
       </div>
+
+      {/* Confirm dialog */}
+      <ConfirmDialog confirm={confirm} setConfirm={setConfirm} />
+
+      {/* Shimmer CSS */}
+      <style>{`@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
+    </div>
+  );
+}
+
+// ── Small helpers ─────────────────────────────────────────────────────────────
+const fieldInput = {
+  width: '100%', padding: '10px 14px',
+  border: '1.5px solid var(--border)', borderRadius: '8px',
+  fontSize: '14px', fontFamily: 'var(--body-font)',
+  color: 'var(--charcoal)', background: '#fff', outline: 'none',
+  boxSizing: 'border-box', transition: 'border-color 0.2s',
+};
+
+const fe = e => e.target.style.borderColor = 'var(--green)';
+const fb = e => e.target.style.borderColor = 'var(--border)';
+
+const actionBtnStyle = {
+  display: 'flex', alignItems: 'center', gap: '5px',
+  padding: '7px 13px', borderRadius: '7px', fontSize: '12px',
+  fontWeight: 500, cursor: 'pointer',
+  background: '#fff', color: 'var(--charcoal)',
+  border: '1.5px solid var(--border)', fontFamily: 'var(--body-font)',
+  transition: 'all 0.2s',
+};
+
+function Field({ label, hint, children }) {
+  return (
+    <div style={{ marginBottom: '16px' }}>
+      <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '8px' }}>
+        {label}
+      </label>
+      {children}
+      {hint && <span style={{ fontSize: '11px', color: '#9aaa9e', display: 'block', marginTop: '4px' }}>{hint}</span>}
     </div>
   );
 }
