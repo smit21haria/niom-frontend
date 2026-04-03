@@ -23,6 +23,7 @@ import AdminCommissionConfig from './pages/AdminCommissionConfig';
 import AdminBrokerage from './pages/AdminBrokerage';
 import ClientReports from './pages/ClientReports';
 import FundDetail from './pages/FundDetail'
+import PortfolioReport from './pages/PortfolioReport'
 
 function PrivateRoute({ children }) {
   return isAuthenticated() ? children : <Navigate to="/login" replace />;
@@ -59,6 +60,9 @@ export default function App() {
           <Route path="admin-controls/brokerage" element={<AdminBrokerage />} />
           <Route path="client-reports" element={<ClientReports />} />
         </Route>
+        <Route path="/report/portfolio/:type/:id" element={
+          <PrivateRoute><PortfolioReport /></PrivateRoute>
+        } />
       </Routes>
     </BrowserRouter>
   );
