@@ -132,8 +132,10 @@ export const schemes = {
   detail:     (plan_id)     => get(`/api/schemes/${plan_id}/detail`),
   growthChart:(plan_id)     => get(`/api/schemes/${plan_id}/growth-chart`),
   compare:    (plan_id, peers = []) => get(`/api/schemes/${plan_id}/compare`, { peers: peers.join(',') }),
-  amcs:       () => get('/api/schemes/meta/amcs'),
-  categories: () => get('/api/schemes/meta/categories'),
+  compareAll: (plans)       => get('/api/schemes/compare-all', { plans }),
+  compareNav: (plans, period = '1Y') => get('/api/schemes/compare-nav', { plans, period }),
+  amcs:       ()            => get('/api/schemes/meta/amcs'),
+  categories: ()            => get('/api/schemes/meta/categories'),
 };
 
 // ── Research ──────────────────────────────────────────────────────────────────
