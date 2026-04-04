@@ -119,7 +119,6 @@ function CCPicker({ value, onChange, disabled = false }) {
   const [filtered, setFiltered] = useState(COUNTRY_CODES);
   const ref = useRef(null);
 
-  // Close on outside click
   useEffect(() => {
     function handle(e) {
       if (ref.current && !ref.current.contains(e.target)) {
@@ -200,6 +199,88 @@ function CCPicker({ value, onChange, disabled = false }) {
             >
               {cc.code} ({cc.label})
             </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Searchable Partner Picker (Referred By) ───────────────────────────────────
+function PartnerPicker({ value, onChange, livePartners }) {
+  const DIRECT  = { slug: '', display: '— Direct (no referral)' };
+  const allOpts = [DIRECT, ...livePartners.map(p => ({
+    slug:    p.slug,
+    display: `${p.fname} ${p.lname}${p.arn ? ' · ' + p.arn : ''}`,
+  }))];
+
+  const [query,    setQuery]    = useState('');
+  const [open,     setOpen]     = useState(false);
+  const [filtered, setFiltered] = useState(allOpts);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handle(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false); setQuery('');
+      }
+    }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, []);
+
+  const handleInput = (e) => {
+    const q = e.target.value;
+    setQuery(q);
+    const n = q.toLowerCase();
+    setFiltered(n ? allOpts.filter(o => o.display.toLowerCase().includes(n)) : allOpts);
+  };
+
+  const select = (opt) => {
+    onChange(opt.slug);
+    setQuery(''); setOpen(false);
+    setFiltered(allOpts);
+  };
+
+  const selected     = allOpts.find(o => o.slug === value) || DIRECT;
+  const displayValue = open ? query : selected.display;
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <input
+        value={displayValue}
+        onChange={handleInput}
+        placeholder="— Direct (no referral)"
+        style={fieldInput}
+        onFocus={e => {
+          setOpen(true); setQuery(''); setFiltered(allOpts);
+          e.target.style.borderColor = 'var(--green)';
+        }}
+        onBlur={e => e.target.style.borderColor = 'var(--border)'}
+      />
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300,
+          background: '#fff', borderRadius: '8px', marginTop: '4px',
+          border: '1px solid var(--border)',
+          boxShadow: '0 8px 24px rgba(44,74,62,0.12)',
+          maxHeight: '200px', overflowY: 'auto',
+        }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: '12px 14px', fontSize: '12px', color: '#9aaa9e' }}>No match</div>
+          ) : filtered.map(opt => (
+            <div
+              key={opt.slug || '__direct__'}
+              onMouseDown={() => select(opt)}
+              style={{
+                padding: '9px 14px', cursor: 'pointer', fontSize: '13px',
+                color: opt.slug === value ? 'var(--green)' : 'var(--charcoal)',
+                fontWeight: opt.slug === value ? 600 : 400,
+                background: opt.slug === value ? 'rgba(44,74,62,0.06)' : '#fff',
+              }}
+              onMouseEnter={e => { if (opt.slug !== value) e.currentTarget.style.background = 'var(--sage)'; }}
+              onMouseLeave={e => { if (opt.slug !== value) e.currentTarget.style.background = '#fff'; }}
+            >{opt.display}</div>
           ))}
         </div>
       )}
@@ -450,7 +531,6 @@ export default function AdminPartners() {
     try {
       let photo_url = null, logo_url = null;
 
-      // Upload photo if new file selected
       if (form.photoFile) {
         const fd = new FormData();
         fd.append('photo', form.photoFile);
@@ -458,7 +538,6 @@ export default function AdminPartners() {
         if (r.ok) { const d = await r.json(); photo_url = d.url; }
       }
 
-      // Upload logo if new file selected
       if (form.logoFile) {
         const fd = new FormData();
         fd.append('logo', form.logoFile);
@@ -467,17 +546,17 @@ export default function AdminPartners() {
       }
 
       const payload = {
-        slug:           form.slug.trim() || autoSlug(form.fname, form.lname),
-        fname:          form.fname.trim(),
-        lname:          form.lname.trim(),
-        arn:            form.arn.trim() || null,
-        tagline:        form.tagline.trim(),
-        bio:            form.bio.trim(),
-        wa_cc:          form.waCC,
-        wa_number:      form.waNumber.trim(),
-        call_cc:        form.callCC,
-        call_number:    form.callNumber.trim(),
-        services:       form.services,
+        slug:             form.slug.trim() || autoSlug(form.fname, form.lname),
+        fname:            form.fname.trim(),
+        lname:            form.lname.trim(),
+        arn:              form.arn.trim() || null,
+        tagline:          form.tagline.trim(),
+        bio:              form.bio.trim(),
+        wa_cc:            form.waCC,
+        wa_number:        form.waNumber.trim(),
+        call_cc:          form.callCC,
+        call_number:      form.callNumber.trim(),
+        services:         form.services,
         referred_by_slug: form.referredBy || null,
       };
       if (photo_url) payload.photo_url = photo_url;
@@ -489,7 +568,6 @@ export default function AdminPartners() {
           method: 'PATCH', body: JSON.stringify(payload),
         });
       } else {
-        // Try slug; auto-increment on collision
         res = await api('/api/partners', { method: 'POST', body: JSON.stringify(payload) });
         if (res && res.status === 409) {
           let suffix = 2;
@@ -807,16 +885,11 @@ export default function AdminPartners() {
                       <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--green)', fontWeight: 500, display: 'block', marginBottom: '8px' }}>
                         Referred By (MLM Upline)
                       </label>
-                      <select
+                      <PartnerPicker
                         value={form.referredBy}
-                        onChange={e => updateForm('referredBy', e.target.value)}
-                        style={{ width: '100%', border: '1.5px solid var(--border)', borderRadius: '8px', padding: '10px 14px', fontFamily: 'var(--body-font)', fontSize: '14px', color: 'var(--charcoal)', background: '#fff', outline: 'none' }}
-                      >
-                        <option value="">— Direct (no referral)</option>
-                        {partners.filter(p => p.status === 'live').map(p => (
-                          <option key={p.id} value={p.slug}>{p.fname} {p.lname} · {p.arn}</option>
-                        ))}
-                      </select>
+                        onChange={v => updateForm('referredBy', v)}
+                        livePartners={partners.filter(p => p.status === 'live')}
+                      />
                     </div>
                   </div>
 
@@ -887,7 +960,6 @@ export default function AdminPartners() {
                   <div style={{ padding: '28px 32px', borderBottom: '1px solid var(--border)' }}>
                     <div style={{ ...tabLabel, marginBottom: '20px' }}>Contact Details</div>
 
-                    {/* Call Number */}
                     <Field label="Call Number">
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <CCPicker value={form.callCC} onChange={v => {
@@ -902,7 +974,6 @@ export default function AdminPartners() {
                       </div>
                     </Field>
 
-                    {/* Same number checkbox */}
                     <div style={{ margin: '12px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input type="checkbox" id="sameNum" checked={form.sameNumber} onChange={e => {
                         const checked = e.target.checked;
@@ -914,7 +985,6 @@ export default function AdminPartners() {
                       </label>
                     </div>
 
-                    {/* WhatsApp Number */}
                     <Field label="WhatsApp Number">
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <CCPicker value={form.waCC} onChange={v => updateForm('waCC', v)} disabled={form.sameNumber} />
@@ -998,19 +1068,12 @@ export default function AdminPartners() {
                     Generate a unique link and send it to your partner. They'll fill in their own details and the page will be created once you approve.
                   </p>
 
-                  {/* Step 1 */}
                   <div style={{ display: 'flex', gap: '20px', padding: '20px 0', borderBottom: '1px solid var(--border)' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0 }}>1</div>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontSize: '14px', color: 'var(--charcoal)', marginBottom: '12px' }}>Enter the partner's full name to generate their unique link</p>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <input
-                          value={linkName}
-                          onChange={e => setLinkName(e.target.value)}
-                          placeholder="Partner's full name (e.g. Priya Sharma)"
-                          style={{ ...fieldInput, flex: 1 }}
-                          onFocus={fe} onBlur={fb}
-                        />
+                        <input value={linkName} onChange={e => setLinkName(e.target.value)} placeholder="Partner's full name (e.g. Priya Sharma)" style={{ ...fieldInput, flex: 1 }} onFocus={fe} onBlur={fb} />
                         <button onClick={generateLink} style={{ padding: '10px 20px', borderRadius: '8px', background: 'var(--green)', color: 'var(--ivory)', border: 'none', fontSize: '13px', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'var(--body-font)' }}>
                           🔗 Generate Link
                         </button>
@@ -1018,7 +1081,6 @@ export default function AdminPartners() {
                     </div>
                   </div>
 
-                  {/* Step 2 */}
                   <div style={{ display: 'flex', gap: '20px', padding: '20px 0', borderBottom: '1px solid var(--border)', opacity: linkStepsActive ? 1 : 0.4, transition: 'opacity 0.3s', pointerEvents: linkStepsActive ? 'auto' : 'none' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0 }}>2</div>
                     <div style={{ flex: 1 }}>
@@ -1026,11 +1088,7 @@ export default function AdminPartners() {
                       {generatedLink && (
                         <div style={{ background: 'var(--sage)', borderRadius: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <span style={{ flex: 1, fontSize: '13px', color: 'var(--green)', wordBreak: 'break-all' }}>{generatedLink}</span>
-                          <button onClick={() => {
-                            navigator.clipboard.writeText(generatedLink);
-                            setLinkCopied(true);
-                            setTimeout(() => setLinkCopied(false), 2000);
-                          }} style={{ background: 'var(--green)', color: 'var(--ivory)', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'var(--body-font)' }}>
+                          <button onClick={() => { navigator.clipboard.writeText(generatedLink); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000); }} style={{ background: 'var(--green)', color: 'var(--ivory)', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'var(--body-font)' }}>
                             {linkCopied ? 'Copied!' : 'Copy'}
                           </button>
                         </div>
@@ -1038,7 +1096,6 @@ export default function AdminPartners() {
                     </div>
                   </div>
 
-                  {/* Step 3 */}
                   <div style={{ display: 'flex', gap: '20px', padding: '20px 0', opacity: linkStepsActive ? 1 : 0.4, transition: 'opacity 0.3s' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--sage)', border: '1.5px solid rgba(44,74,62,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--green)', flexShrink: 0 }}>3</div>
                     <div>
@@ -1075,10 +1132,7 @@ export default function AdminPartners() {
         </div>
       </div>
 
-      {/* Confirm dialog */}
       <ConfirmDialog confirm={confirm} setConfirm={setConfirm} />
-
-      {/* Shimmer CSS */}
       <style>{`@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
     </div>
   );
