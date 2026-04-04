@@ -101,6 +101,17 @@ export function getPartnerSlug() {
   }
 }
 
+export function getPartnerName() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.name || null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export const dashboard = {

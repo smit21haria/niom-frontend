@@ -1,48 +1,102 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { getUserRole } from '../../lib/api';
 
-const mainSections = [
+// ── Admin nav ─────────────────────────────────────────────────────────────────
+
+const adminMainSections = [
   { to: '/dashboard', label: 'Client Dashboard' },
-  { to: '/partners', label: 'Partner Dashboard' },
+  { to: '/partners',  label: 'Partner Dashboard' },
 ];
 
-const clientSections = [
+const adminClientSections = [
   { to: '/investors', label: 'Investors' },
-  { to: '/families', label: 'Families' },
+  { to: '/families',  label: 'Families' },
 ];
 
-const financeSections = [
-  { to: '/commission', label: 'Commission' },
+const adminFinanceSections = [
+  { to: '/commission',    label: 'Commission' },
   { to: '/client-reports', label: 'Client Reports' },
 ];
 
-const researchSubs = [
-  { to: '/research/funds', label: 'Fund Explorer' },
-  { to: '/research/compare', label: 'Compare Funds' },
-  { to: '/research/categories', label: 'Category Analysis' },
+const adminResearchSubs = [
+  { to: '/research/funds',       label: 'Fund Explorer' },
+  { to: '/research/compare',     label: 'Compare Funds' },
+  { to: '/research/categories',  label: 'Category Analysis' },
   { to: '/research/calculators', label: 'Calculators' },
 ];
 
-const adminSubs = [
-  { to: '/admin-controls/profile', label: 'Admin Profile' },
-  { to: '/admin-controls/partners', label: 'Partner Management' },
-  { to: '/admin-controls/investors', label: 'Investor Management' },
-  { to: '/admin-controls/families', label: 'Family Management' },
-  { to: '/admin-controls/access', label: 'Access Control' },
+const adminControlsSubs = [
+  { to: '/admin-controls/profile',    label: 'Admin Profile' },
+  { to: '/admin-controls/partners',   label: 'Partner Management' },
+  { to: '/admin-controls/investors',  label: 'Investor Management' },
+  { to: '/admin-controls/families',   label: 'Family Management' },
+  { to: '/admin-controls/access',     label: 'Access Control' },
   { to: '/admin-controls/commission', label: 'Commission Config' },
-  { to: '/admin-controls/brokerage', label: 'Brokerage Management' },
+  { to: '/admin-controls/brokerage',  label: 'Brokerage Management' },
 ];
+
+// ── Partner nav ───────────────────────────────────────────────────────────────
+
+const partnerMainSections = [
+  { to: '/dashboard', label: 'Client Dashboard' },
+];
+
+const partnerClientSections = [
+  { to: '/investors', label: 'Investors' },
+  { to: '/families',  label: 'Families' },
+];
+
+const partnerFinanceSections = [
+  { to: '/commission',     label: 'Commission' },
+  { to: '/client-reports', label: 'Client Reports' },
+];
+
+const partnerResearchSubs = [
+  { to: '/research/funds',       label: 'Fund Explorer' },
+  { to: '/research/compare',     label: 'Compare Funds' },
+  { to: '/research/categories',  label: 'Category Analysis' },
+  { to: '/research/calculators', label: 'Calculators' },
+];
+
+const partnerAccountSubs = [
+  { to: '/admin-controls/profile',   label: 'Partner Profile' },
+  { to: '/admin-controls/investors', label: 'Investor Management' },
+  { to: '/admin-controls/families',  label: 'Family Management' },
+];
+
+// ── Sidebar component ─────────────────────────────────────────────────────────
 
 export default function Sidebar() {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
+  const navigate     = useNavigate();
+  const role         = getUserRole();
+  const isPartner    = role === 'partner';
+
+  const mainSections    = isPartner ? partnerMainSections    : adminMainSections;
+  const clientSections  = isPartner ? partnerClientSections  : adminClientSections;
+  const financeSections = isPartner ? partnerFinanceSections : adminFinanceSections;
+  const researchSubs    = isPartner ? partnerResearchSubs    : adminResearchSubs;
+  const controlsSubs    = isPartner ? partnerAccountSubs     : adminControlsSubs;
+  const controlsLabel   = isPartner ? 'My Account'           : 'Admin Controls';
+  const controlsDefault = isPartner ? '/admin-controls/profile' : '/admin-controls/profile';
+
   const isResearchActive = pathname.startsWith('/research');
-  const isAdminActive = pathname.startsWith('/admin-controls');
+  const isAdminActive    = pathname.startsWith('/admin-controls');
+
   const [researchOpen, setResearchOpen] = useState(isResearchActive);
-  const [adminOpen, setAdminOpen] = useState(isAdminActive);
+  const [adminOpen,    setAdminOpen]    = useState(isAdminActive);
 
   useEffect(() => { if (isResearchActive) setResearchOpen(true); }, [isResearchActive]);
-  useEffect(() => { if (isAdminActive) setAdminOpen(true); }, [isAdminActive]);
+  useEffect(() => { if (isAdminActive)    setAdminOpen(true);    }, [isAdminActive]);
+
+  const sectionLabel = (text) => (
+    <div style={{
+      fontSize: '10px', textTransform: 'uppercase',
+      letterSpacing: '0.2em', color: 'var(--gold)',
+      fontWeight: 600, marginBottom: '10px', padding: '0 12px',
+    }}>{text}</div>
+  );
 
   const navItem = (item) => {
     const isActive = pathname === item.to;
@@ -81,17 +135,10 @@ export default function Sidebar() {
     );
   };
 
-  const sectionLabel = (text) => (
-    <div style={{
-      fontSize: '10px', textTransform: 'uppercase',
-      letterSpacing: '0.2em', color: 'var(--gold)',
-      fontWeight: 600, marginBottom: '10px', padding: '0 12px',
-    }}>{text}</div>
-  );
-
   const expandableItem = ({ label, isActive, isOpen, onToggle, defaultRoute, subs }) => (
     <div>
-      <div onClick={() => { if (!isOpen) { onToggle(true); navigate(defaultRoute); } else onToggle(false); }}
+      <div
+        onClick={() => { if (!isOpen) { onToggle(true); navigate(defaultRoute); } else onToggle(false); }}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '10px 12px', borderRadius: '8px',
@@ -149,12 +196,12 @@ export default function Sidebar() {
           subs: researchSubs,
         })}
         {expandableItem({
-          label: 'Admin Controls',
+          label: controlsLabel,
           isActive: isAdminActive,
           isOpen: adminOpen,
           onToggle: setAdminOpen,
-          defaultRoute: '/admin-controls/profile',
-          subs: adminSubs,
+          defaultRoute: controlsDefault,
+          subs: controlsSubs,
         })}
       </div>
     </aside>
