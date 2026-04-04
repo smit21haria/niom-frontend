@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { investors, partners, families } from '../lib/api';
 
@@ -55,38 +55,166 @@ function Label({ children }) {
   return <div style={{ ...tabLabel, fontSize: '10px', marginBottom: '6px' }}>{children}</div>;
 }
 
-const CC_OPTIONS = [
-  { code: '+91',  label: '+91 (India)' },
-  { code: '+1',   label: '+1 (USA/Canada)' },
-  { code: '+44',  label: '+44 (UK)' },
-  { code: '+971', label: '+971 (UAE)' },
-  { code: '+65',  label: '+65 (Singapore)' },
-  { code: '+61',  label: '+61 (Australia)' },
-  { code: '+49',  label: '+49 (Germany)' },
-  { code: '+33',  label: '+33 (France)' },
-  { code: '+81',  label: '+81 (Japan)' },
-  { code: '+86',  label: '+86 (China)' },
-  { code: '+974', label: '+974 (Qatar)' },
-  { code: '+966', label: '+966 (Saudi Arabia)' },
-  { code: '+60',  label: '+60 (Malaysia)' },
-  { code: '+64',  label: '+64 (New Zealand)' },
-  { code: '+27',  label: '+27 (South Africa)' },
+const COUNTRY_CODES = [
+  { code: '+91',  label: 'India' },
+  { code: '+1',   label: 'USA / Canada' },
+  { code: '+44',  label: 'UK' },
+  { code: '+971', label: 'UAE' },
+  { code: '+65',  label: 'Singapore' },
+  { code: '+61',  label: 'Australia' },
+  { code: '+852', label: 'Hong Kong' },
+  { code: '+41',  label: 'Switzerland' },
+  { code: '+49',  label: 'Germany' },
+  { code: '+33',  label: 'France' },
+  { code: '+81',  label: 'Japan' },
+  { code: '+82',  label: 'South Korea' },
+  { code: '+86',  label: 'China' },
+  { code: '+60',  label: 'Malaysia' },
+  { code: '+66',  label: 'Thailand' },
+  { code: '+62',  label: 'Indonesia' },
+  { code: '+63',  label: 'Philippines' },
+  { code: '+84',  label: 'Vietnam' },
+  { code: '+94',  label: 'Sri Lanka' },
+  { code: '+92',  label: 'Pakistan' },
+  { code: '+880', label: 'Bangladesh' },
+  { code: '+977', label: 'Nepal' },
+  { code: '+64',  label: 'New Zealand' },
+  { code: '+27',  label: 'South Africa' },
+  { code: '+234', label: 'Nigeria' },
+  { code: '+254', label: 'Kenya' },
+  { code: '+20',  label: 'Egypt' },
+  { code: '+212', label: 'Morocco' },
+  { code: '+966', label: 'Saudi Arabia' },
+  { code: '+974', label: 'Qatar' },
+  { code: '+973', label: 'Bahrain' },
+  { code: '+968', label: 'Oman' },
+  { code: '+965', label: 'Kuwait' },
+  { code: '+972', label: 'Israel' },
+  { code: '+90',  label: 'Turkey' },
+  { code: '+7',   label: 'Russia' },
+  { code: '+48',  label: 'Poland' },
+  { code: '+31',  label: 'Netherlands' },
+  { code: '+32',  label: 'Belgium' },
+  { code: '+34',  label: 'Spain' },
+  { code: '+39',  label: 'Italy' },
+  { code: '+351', label: 'Portugal' },
+  { code: '+46',  label: 'Sweden' },
+  { code: '+47',  label: 'Norway' },
+  { code: '+45',  label: 'Denmark' },
+  { code: '+353', label: 'Ireland' },
+  { code: '+43',  label: 'Austria' },
+  { code: '+55',  label: 'Brazil' },
+  { code: '+54',  label: 'Argentina' },
+  { code: '+52',  label: 'Mexico' },
+  { code: '+57',  label: 'Colombia' },
+  { code: '+56',  label: 'Chile' },
+  { code: '+51',  label: 'Peru' },
+  { code: '+30',  label: 'Greece' },
+  { code: '+36',  label: 'Hungary' },
+  { code: '+420', label: 'Czech Republic' },
+  { code: '+358', label: 'Finland' },
+  { code: '+1345',label: 'Cayman Islands' },
+  { code: '+1284',label: 'British Virgin Islands' },
 ];
+
+function ccFmt(code) {
+  const found = COUNTRY_CODES.find(c => c.code === code);
+  return found ? `${found.code} (${found.label})` : code;
+}
+
+function CCPicker({ value, onChange }) {
+  const [query,    setQuery]    = useState('');
+  const [open,     setOpen]     = useState(false);
+  const [filtered, setFiltered] = useState(COUNTRY_CODES);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handle(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        setQuery('');
+        setFiltered(COUNTRY_CODES);
+      }
+    }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, []);
+
+  const handleInput = (e) => {
+    const q = e.target.value;
+    setQuery(q);
+    const n = q.trim().toLowerCase().replace(/^\+/, '');
+    setFiltered(n
+      ? COUNTRY_CODES.filter(c =>
+          c.code.replace('+', '').startsWith(n) ||
+          c.label.toLowerCase().includes(n)
+        )
+      : COUNTRY_CODES
+    );
+  };
+
+  const select = (cc) => {
+    onChange(cc.code);
+    setQuery('');
+    setFiltered(COUNTRY_CODES);
+    setOpen(false);
+  };
+
+  const displayValue = open ? query : ccFmt(value);
+
+  return (
+    <div ref={ref} style={{ position: 'relative', width: '160px', flexShrink: 0 }}>
+      <input
+        value={displayValue}
+        onChange={handleInput}
+        onFocus={() => { setOpen(true); setQuery(''); }}
+        onBlur={e => e.target.style.borderColor = 'var(--border)'}
+        placeholder={ccFmt(value)}
+        style={{
+          width: '100%', padding: '10px 12px',
+          border: '1.5px solid var(--border)', borderRadius: '8px',
+          fontSize: '13px', fontFamily: 'var(--body-font)',
+          color: 'var(--charcoal)', background: '#fff',
+          outline: 'none', boxSizing: 'border-box',
+        }}
+      />
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300,
+          background: '#fff', borderRadius: '8px', marginTop: '4px',
+          border: '1px solid var(--border)',
+          boxShadow: '0 8px 24px rgba(44,74,62,0.12)',
+          maxHeight: '200px', overflowY: 'auto',
+        }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: '12px 14px', fontSize: '12px', color: '#9aaa9e' }}>No match</div>
+          ) : filtered.map(cc => (
+            <div
+              key={cc.code + cc.label}
+              onMouseDown={() => select(cc)}
+              style={{
+                padding: '9px 14px', cursor: 'pointer', fontSize: '13px',
+                color: cc.code === value ? 'var(--green)' : 'var(--charcoal)',
+                fontWeight: cc.code === value ? 600 : 400,
+                background: cc.code === value ? 'rgba(44,74,62,0.06)' : '#fff',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => { if (cc.code !== value) e.currentTarget.style.background = 'var(--sage)'; }}
+              onMouseLeave={e => { if (cc.code !== value) e.currentTarget.style.background = cc.code === value ? 'rgba(44,74,62,0.06)' : '#fff'; }}
+            >
+              {cc.code} ({cc.label})
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function MobileField({ cc, number, onCCChange, onNumberChange }) {
   return (
     <div style={{ display: 'flex', gap: '8px' }}>
-      <select
-        value={cc}
-        onChange={e => onCCChange(e.target.value)}
-        style={{ ...selectStyle, width: '110px', flexShrink: 0, padding: '10px 28px 10px 10px', fontSize: '13px' }}
-        onFocus={e => e.target.style.borderColor = 'var(--green)'}
-        onBlur={e => e.target.style.borderColor = 'var(--border)'}
-      >
-        {CC_OPTIONS.map(o => (
-          <option key={o.code + o.label} value={o.code}>{o.code}</option>
-        ))}
-      </select>
+      <CCPicker value={cc} onChange={onCCChange} />
       <input
         value={number}
         onChange={e => onNumberChange(e.target.value)}
