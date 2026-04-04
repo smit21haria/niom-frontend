@@ -55,8 +55,7 @@ function Label({ children }) {
   return <div style={{ ...tabLabel, fontSize: '10px', marginBottom: '6px' }}>{children}</div>;
 }
 
-// ── DOB Picker — three linked dropdowns ──────────────────────────────────────
-// value: 'YYYY-MM-DD' or '', onChange: called with 'YYYY-MM-DD' or ''
+// ── DOB Picker ────────────────────────────────────────────────────────────────
 
 function DOBPicker({ value, onChange }) {
   const parse = (v) => {
@@ -64,9 +63,7 @@ function DOBPicker({ value, onChange }) {
     const [y, m, d] = v.split('-');
     return { d: d || '', m: m || '', y: y || '' };
   };
-
   const [parts, setParts] = useState(() => parse(value));
-
   useEffect(() => { setParts(parse(value)); }, [value]);
 
   const commit = (next) => {
@@ -76,13 +73,7 @@ function DOBPicker({ value, onChange }) {
       onChange('');
     }
   };
-
-  const set = (key, val) => {
-    const next = { ...parts, [key]: val };
-    setParts(next);
-    commit(next);
-  };
-
+  const set = (key, val) => { const next = { ...parts, [key]: val }; setParts(next); commit(next); };
   const fi = (e) => (e.target.style.borderColor = 'var(--green)');
   const fb = (e) => (e.target.style.borderColor = 'var(--border)');
 
@@ -90,11 +81,11 @@ function DOBPicker({ value, onChange }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '8px' }}>
       <select value={parts.d} onChange={e => set('d', e.target.value)} style={selectStyle} onFocus={fi} onBlur={fb}>
         <option value="">Day</option>
-        {DAYS.map(d => <option key={d} value={String(d).padStart(2, '0')}>{d}</option>)}
+        {DAYS.map(d => <option key={d} value={String(d).padStart(2,'0')}>{d}</option>)}
       </select>
       <select value={parts.m} onChange={e => set('m', e.target.value)} style={selectStyle} onFocus={fi} onBlur={fb}>
         <option value="">Month</option>
-        {MONTHS.map((name, i) => <option key={name} value={String(i + 1).padStart(2, '0')}>{name}</option>)}
+        {MONTHS.map((name, i) => <option key={name} value={String(i+1).padStart(2,'0')}>{name}</option>)}
       </select>
       <select value={parts.y} onChange={e => set('y', e.target.value)} style={selectStyle} onFocus={fi} onBlur={fb}>
         <option value="">Year</option>
@@ -116,7 +107,7 @@ function SkeletonRow() {
   };
   return (
     <tr style={{ borderBottom: '1px solid var(--border)' }}>
-      {[180, 100, 120, 110, 80, 80, 80].map((w, i) => (
+      {[180,100,120,110,80,80,80].map((w,i) => (
         <td key={i} style={{ padding: '16px 20px' }}><div style={{ ...shimmer, width: w }} /></td>
       ))}
     </tr>
@@ -125,7 +116,8 @@ function SkeletonRow() {
 
 const EMPTY_FORM = {
   firstName: '', lastName: '', pan: '', mobile: '',
-  email: '', date_of_birth: '', partner_id: '', family_id: '', kyc_status: 'pending',
+  email: '', date_of_birth: '', partner_id: '', family_id: '',
+  kyc_status: 'pending', risk_profile: 'Moderate',
 };
 
 const subSections = ['Investor List', 'Create Investor'];
@@ -142,6 +134,7 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved }) {
     partner_id:    investor.partner_id     ? String(investor.partner_id) : '',
     family_id:     investor.family_id      ? String(investor.family_id)  : '',
     kyc_status:    investor.kyc_status     || 'pending',
+    risk_profile:  investor.risk_profile   || 'Moderate',
   });
   const [drawerFamilies, setDrawerFamilies] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -175,6 +168,7 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved }) {
         partner_id:    form.partner_id       ? parseInt(form.partner_id) : null,
         family_id:     form.family_id        ? parseInt(form.family_id)  : null,
         kyc_status:    form.kyc_status,
+        risk_profile:  form.risk_profile,
       });
       setSaved(true);
       onSaved();
@@ -185,7 +179,7 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved }) {
     }
   };
 
-  const fi = { onFocus: e => e.target.style.borderColor = 'var(--green)', onBlur: e => e.target.style.borderColor = 'var(--border)' };
+  const fi = { onFocus: e => e.target.style.borderColor='var(--green)', onBlur: e => e.target.style.borderColor='var(--border)' };
 
   return (
     <>
@@ -197,6 +191,7 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved }) {
         </div>
 
         <div style={{ padding: '28px', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* PAN — read-only */}
           <div>
             <Label>PAN Number</Label>
             <input value={investor.pan || ''} disabled style={{ ...inputStyle, background: 'var(--sage)', color: '#8a9e96', cursor: 'not-allowed' }} />
@@ -213,7 +208,7 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved }) {
           </div>
           <div>
             <Label>Assign to Partner</Label>
-            <select value={form.partner_id} onChange={e => handlePartnerChange(e.target.value)} style={selectStyle} onFocus={e => e.target.style.borderColor = 'var(--green)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}>
+            <select value={form.partner_id} onChange={e => handlePartnerChange(e.target.value)} style={selectStyle} onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
               <option value="">— No partner</option>
               {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
             </select>
@@ -221,27 +216,37 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved }) {
           <div>
             <Label>Assign to Family</Label>
             <select value={form.family_id} onChange={e => update('family_id', e.target.value)} disabled={!form.partner_id}
-              style={{ ...selectStyle, cursor: form.partner_id ? 'pointer' : 'not-allowed', background: form.partner_id ? '#fff' : 'var(--sage)', color: form.partner_id ? 'var(--charcoal)' : '#8a9e96' }}
-              onFocus={e => e.target.style.borderColor = 'var(--green)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}>
+              style={{ ...selectStyle, cursor: form.partner_id?'pointer':'not-allowed', background: form.partner_id?'#fff':'var(--sage)', color: form.partner_id?'var(--charcoal)':'#8a9e96' }}
+              onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
               <option value="">— No family</option>
               {drawerFamilies.map(f => <option key={f.id} value={String(f.id)}>{f.name}</option>)}
             </select>
           </div>
-          <div>
-            <Label>KYC Status</Label>
-            <select value={form.kyc_status} onChange={e => update('kyc_status', e.target.value)} style={selectStyle} onFocus={e => e.target.style.borderColor = 'var(--green)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}>
-              <option value="pending">Pending</option>
-              <option value="verified">Verified</option>
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <Label>KYC Status</Label>
+              <select value={form.kyc_status} onChange={e => update('kyc_status', e.target.value)} style={selectStyle} onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
+                <option value="pending">Pending</option>
+                <option value="verified">Verified</option>
+              </select>
+            </div>
+            <div>
+              <Label>Risk Profile</Label>
+              <select value={form.risk_profile} onChange={e => update('risk_profile', e.target.value)} style={selectStyle} onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
+                <option value="Conservative">Conservative</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Aggressive">Aggressive</option>
+              </select>
+            </div>
           </div>
           {error && <div style={{ fontSize: '13px', color: '#c0392b', padding: '10px 14px', background: 'rgba(192,57,43,0.06)', borderRadius: '8px' }}>{error}</div>}
         </div>
 
         <div style={{ padding: '20px 28px', borderTop: '1px solid var(--border)', display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
           <button onClick={handleSave} disabled={submitting}
-            style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'var(--green)', color: 'var(--ivory)', border: 'none', fontSize: '13px', fontWeight: 500, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
-            onMouseEnter={e => { if (!submitting) e.currentTarget.style.background = 'var(--gold)'; }}
-            onMouseLeave={e => { if (!submitting) e.currentTarget.style.background = 'var(--green)'; }}>
+            style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'var(--green)', color: 'var(--ivory)', border: 'none', fontSize: '13px', fontWeight: 500, cursor: submitting?'not-allowed':'pointer', opacity: submitting?0.7:1 }}
+            onMouseEnter={e => { if (!submitting) e.currentTarget.style.background='var(--gold)'; }}
+            onMouseLeave={e => { if (!submitting) e.currentTarget.style.background='var(--green)'; }}>
             {submitting ? 'Saving…' : 'Save Changes'}
           </button>
           <button onClick={onClose} style={{ padding: '12px 20px', borderRadius: '8px', background: 'transparent', color: '#8a9e96', border: '1.5px solid var(--border)', fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
@@ -324,6 +329,7 @@ export default function AdminInvestors() {
         partner_id:    form.partner_id         ? parseInt(form.partner_id) : null,
         family_id:     form.family_id          ? parseInt(form.family_id)  : null,
         kyc_status:    form.kyc_status,
+        risk_profile:  form.risk_profile,
       });
       setForm({ ...EMPTY_FORM });
       setCreateFamilies([]);
@@ -339,7 +345,7 @@ export default function AdminInvestors() {
   };
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-  const fi = { onFocus: e => e.target.style.borderColor = 'var(--green)', onBlur: e => e.target.style.borderColor = 'var(--border)' };
+  const fi = { onFocus: e => e.target.style.borderColor='var(--green)', onBlur: e => e.target.style.borderColor='var(--border)' };
 
   return (
     <div>
@@ -359,25 +365,31 @@ export default function AdminInvestors() {
         {/* Sidebar */}
         <div style={{ width: '200px', flexShrink: 0, background: '#fff', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', overflow: 'hidden', position: 'sticky', top: '20px' }}>
           {subSections.map(s => (
-            <div key={s} onClick={() => setActiveSection(s)} style={{ padding: '14px 18px', cursor: 'pointer', fontSize: '13px', fontWeight: activeSection === s ? 600 : 500, color: activeSection === s ? 'var(--green)' : 'var(--charcoal)', background: activeSection === s ? 'rgba(44,74,62,0.06)' : '#fff', borderLeft: `3px solid ${activeSection === s ? 'var(--green)' : 'transparent'}`, borderBottom: '1px solid var(--border)', transition: 'all 0.15s' }}
-              onMouseEnter={e => { if (activeSection !== s) e.currentTarget.style.background = 'var(--sage)'; }}
-              onMouseLeave={e => { if (activeSection !== s) e.currentTarget.style.background = '#fff'; }}
+            <div key={s} onClick={() => setActiveSection(s)}
+              style={{ padding: '14px 18px', cursor: 'pointer', fontSize: '13px', fontWeight: activeSection===s?600:500, color: activeSection===s?'var(--green)':'var(--charcoal)', background: activeSection===s?'rgba(44,74,62,0.06)':'#fff', borderLeft: `3px solid ${activeSection===s?'var(--green)':'transparent'}`, borderBottom: '1px solid var(--border)', transition: 'all 0.15s' }}
+              onMouseEnter={e => { if (activeSection!==s) e.currentTarget.style.background='var(--sage)'; }}
+              onMouseLeave={e => { if (activeSection!==s) e.currentTarget.style.background='#fff'; }}
             >{s}</div>
           ))}
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Investor List */}
+          {/* ── Investor List ── */}
           {activeSection === 'Investor List' && (
             <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
               <div style={{ padding: '20px 28px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <span style={{ ...sectionHead, fontSize: '18px', marginRight: 'auto' }}>All Investors</span>
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, PAN, email…" style={{ ...inputStyle, width: '220px', padding: '8px 14px', fontSize: '13px' }} {...fi} />
-                <select value={partnerFilter} onChange={e => setPartnerFilter(e.target.value)} style={{ ...selectStyle, width: '160px', padding: '8px 14px', fontSize: '13px' }} onFocus={e => e.target.style.borderColor = 'var(--green)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, PAN, email…"
+                  style={{ ...inputStyle, width: '220px', padding: '8px 14px', fontSize: '13px' }} {...fi} />
+                <select value={partnerFilter} onChange={e => setPartnerFilter(e.target.value)}
+                  style={{ ...selectStyle, width: '160px', padding: '8px 14px', fontSize: '13px' }}
+                  onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
                   <option value="">All Partners</option>
                   {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
                 </select>
-                <select value={kycFilter} onChange={e => setKycFilter(e.target.value)} style={{ ...selectStyle, width: '130px', padding: '8px 14px', fontSize: '13px' }} onFocus={e => e.target.style.borderColor = 'var(--green)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}>
+                <select value={kycFilter} onChange={e => setKycFilter(e.target.value)}
+                  style={{ ...selectStyle, width: '130px', padding: '8px 14px', fontSize: '13px' }}
+                  onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
                   <option value="">All KYC</option>
                   <option value="verified">Verified</option>
                   <option value="pending">Pending</option>
@@ -394,46 +406,46 @@ export default function AdminInvestors() {
                   </thead>
                   <tbody>
                     {loading ? (
-                      Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
+                      Array.from({ length: 6 }).map((_,i) => <SkeletonRow key={i} />)
                     ) : investorList.length === 0 ? (
                       <tr><td colSpan={7} style={{ padding: '60px 24px', textAlign: 'center' }}>
                         <div style={{ fontFamily: 'var(--display-font)', fontSize: '22px', color: 'var(--green)', marginBottom: '8px' }}>
-                          {search || partnerFilter || kycFilter ? 'No results match your filters.' : 'No investors yet'}
+                          {search||partnerFilter||kycFilter ? 'No results match your filters.' : 'No investors yet'}
                         </div>
-                        {!search && !partnerFilter && !kycFilter && <div style={{ fontSize: '13px', color: '#8a9e96' }}>Create your first investor using the form.</div>}
+                        {!search&&!partnerFilter&&!kycFilter && <div style={{ fontSize: '13px', color: '#8a9e96' }}>Create your first investor using the form.</div>}
                       </td></tr>
                     ) : investorList.map(inv => (
                       <tr key={inv.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--sage)'}
-                        onMouseLeave={e => e.currentTarget.style.background = ''}>
+                        onMouseEnter={e => e.currentTarget.style.background='var(--sage)'}
+                        onMouseLeave={e => e.currentTarget.style.background=''}>
                         <td style={{ padding: '14px 20px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(44,74,62,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--display-font)', fontSize: '12px', fontWeight: 600, color: 'var(--green)' }}>
-                              {(inv.first_name?.[0] || '') + (inv.last_name?.[0] || '')}
+                              {(inv.first_name?.[0]||'')+(inv.last_name?.[0]||'')}
                             </div>
                             <div>
-                              <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--charcoal)' }}>{inv.first_name} {inv.last_name || ''}</div>
-                              <div style={{ fontSize: '11px', color: '#9aaa9e' }}>{inv.email || inv.mobile || ''}</div>
+                              <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--charcoal)' }}>{inv.first_name} {inv.last_name||''}</div>
+                              <div style={{ fontSize: '11px', color: '#9aaa9e' }}>{inv.email||inv.mobile||''}</div>
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '14px 20px', fontSize: '13px', color: '#8a9e96', fontFamily: 'monospace' }}>{inv.pan ? inv.pan.slice(0,3)+'••••'+inv.pan.slice(-2) : '—'}</td>
-                        <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{inv.partner_name || '—'}</td>
-                        <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{inv.family_name || '—'}</td>
+                        <td style={{ padding: '14px 20px', fontSize: '13px', color: '#8a9e96', fontFamily: 'monospace' }}>{inv.pan?inv.pan.slice(0,3)+'••••'+inv.pan.slice(-2):'—'}</td>
+                        <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{inv.partner_name||'—'}</td>
+                        <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{inv.family_name||'—'}</td>
                         <td style={{ padding: '14px 20px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em', ...(kycBadge[inv.kyc_status] || kycBadge.pending) }}>
-                            {inv.kyc_status || 'pending'}
+                          <span style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em', ...(kycBadge[inv.kyc_status]||kycBadge.pending) }}>
+                            {inv.kyc_status||'pending'}
                           </span>
                         </td>
                         <td style={{ padding: '14px 20px', fontSize: '13px', color: '#8a9e96' }}>{formatDate(inv.created_at)}</td>
                         <td style={{ padding: '14px 20px' }}>
                           <div style={{ display: 'flex', gap: '6px' }}>
                             <button onClick={() => navigate(`/investors/${inv.id}`)} style={{ padding: '5px 12px', borderRadius: '6px', fontSize: '12px', border: '1.5px solid var(--border)', background: '#fff', color: 'var(--charcoal)', cursor: 'pointer' }}
-                              onMouseEnter={e => { e.currentTarget.style.borderColor='var(--green)'; e.currentTarget.style.color='var(--green)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--charcoal)'; }}>View</button>
+                              onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--green)';e.currentTarget.style.color='var(--green)';}}
+                              onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.color='var(--charcoal)';}}>View</button>
                             <button onClick={() => setEditingInvestor(inv)} style={{ padding: '5px 12px', borderRadius: '6px', fontSize: '12px', border: '1.5px solid var(--border)', background: '#fff', color: 'var(--charcoal)', cursor: 'pointer' }}
-                              onMouseEnter={e => { e.currentTarget.style.borderColor='var(--green)'; e.currentTarget.style.color='var(--green)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--charcoal)'; }}>Edit</button>
+                              onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--green)';e.currentTarget.style.color='var(--green)';}}
+                              onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.color='var(--charcoal)';}}>Edit</button>
                           </div>
                         </td>
                       </tr>
@@ -449,7 +461,7 @@ export default function AdminInvestors() {
             </div>
           )}
 
-          {/* Create Investor */}
+          {/* ── Create Investor ── */}
           {activeSection === 'Create Investor' && (
             <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '28px' }}>
               <span style={{ ...sectionHead, display: 'block', marginBottom: '24px' }}>Create Investor</span>
@@ -465,7 +477,8 @@ export default function AdminInvestors() {
                 </div>
                 <div>
                   <Label>Assign to Partner</Label>
-                  <select value={form.partner_id} onChange={e => handlePartnerChange(e.target.value)} style={selectStyle} onFocus={e => e.target.style.borderColor = 'var(--green)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}>
+                  <select value={form.partner_id} onChange={e => handlePartnerChange(e.target.value)} style={selectStyle}
+                    onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
                     <option value="">— No partner</option>
                     {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
                   </select>
@@ -473,17 +486,27 @@ export default function AdminInvestors() {
                 <div>
                   <Label>Assign to Family</Label>
                   <select value={form.family_id} onChange={e => update('family_id', e.target.value)} disabled={!form.partner_id}
-                    style={{ ...selectStyle, cursor: form.partner_id ? 'pointer' : 'not-allowed', background: form.partner_id ? '#fff' : 'var(--sage)', color: form.partner_id ? 'var(--charcoal)' : '#8a9e96' }}
-                    onFocus={e => e.target.style.borderColor = 'var(--green)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}>
+                    style={{ ...selectStyle, cursor: form.partner_id?'pointer':'not-allowed', background: form.partner_id?'#fff':'var(--sage)', color: form.partner_id?'var(--charcoal)':'#8a9e96' }}
+                    onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
                     <option value="">— No family</option>
                     {createFamilies.map(f => <option key={f.id} value={String(f.id)}>{f.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <Label>KYC Status</Label>
-                  <select value={form.kyc_status} onChange={e => update('kyc_status', e.target.value)} style={selectStyle} onFocus={e => e.target.style.borderColor = 'var(--green)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}>
+                  <select value={form.kyc_status} onChange={e => update('kyc_status', e.target.value)} style={selectStyle}
+                    onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
                     <option value="pending">Pending</option>
                     <option value="verified">Verified</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Risk Profile</Label>
+                  <select value={form.risk_profile} onChange={e => update('risk_profile', e.target.value)} style={selectStyle}
+                    onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
+                    <option value="Conservative">Conservative</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="Aggressive">Aggressive</option>
                   </select>
                 </div>
               </div>
@@ -493,9 +516,9 @@ export default function AdminInvestors() {
                 </div>
               )}
               <button onClick={handleCreate} disabled={submitting}
-                style={{ padding: '11px 28px', borderRadius: '8px', background: 'var(--green)', color: 'var(--ivory)', border: 'none', fontSize: '13px', fontWeight: 500, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}
-                onMouseEnter={e => { if (!submitting) e.currentTarget.style.background = 'var(--gold)'; }}
-                onMouseLeave={e => { if (!submitting) e.currentTarget.style.background = 'var(--green)'; }}>
+                style={{ padding: '11px 28px', borderRadius: '8px', background: 'var(--green)', color: 'var(--ivory)', border: 'none', fontSize: '13px', fontWeight: 500, cursor: submitting?'not-allowed':'pointer', opacity: submitting?0.7:1 }}
+                onMouseEnter={e => { if(!submitting) e.currentTarget.style.background='var(--gold)'; }}
+                onMouseLeave={e => { if(!submitting) e.currentTarget.style.background='var(--green)'; }}>
                 {submitting ? 'Creating…' : 'Create Investor'}
               </button>
             </div>
