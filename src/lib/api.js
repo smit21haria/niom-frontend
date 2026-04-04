@@ -64,8 +64,42 @@ function del(path) {
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 export const auth = {
-  login: (password) => post('/api/auth/login', { password }),
+  login:        (password)        => post('/api/auth/login',         { password }),
+  partnerLogin: (email, password) => post('/api/auth/partner-login', { email, password }),
 };
+
+export function getUserRole() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.role || null;
+  } catch {
+    return null;
+  }
+}
+
+export function getPartnerId() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.partner_id || null;
+  } catch {
+    return null;
+  }
+}
+
+export function getPartnerSlug() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.slug || null;
+  } catch {
+    return null;
+  }
+}
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
