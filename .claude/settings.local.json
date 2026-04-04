@@ -12,7 +12,9 @@
       "Bash(gh repo:*)",
       "WebFetch(domain:niom-backend.onrender.com)",
       "Bash(git push:*)",
-      "Bash(git revert:*)"
+      "Bash(git revert:*)",
+      "Bash(git -C /Users/smitharia/Desktop/niom-frontend status)",
+      "Bash(git -C /Users/smitharia/Desktop/niom-backend status)"
     ]
   }
 }
