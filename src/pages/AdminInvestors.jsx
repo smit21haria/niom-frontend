@@ -55,6 +55,50 @@ function Label({ children }) {
   return <div style={{ ...tabLabel, fontSize: '10px', marginBottom: '6px' }}>{children}</div>;
 }
 
+const CC_OPTIONS = [
+  { code: '+91',  label: '+91 (India)' },
+  { code: '+1',   label: '+1 (USA/Canada)' },
+  { code: '+44',  label: '+44 (UK)' },
+  { code: '+971', label: '+971 (UAE)' },
+  { code: '+65',  label: '+65 (Singapore)' },
+  { code: '+61',  label: '+61 (Australia)' },
+  { code: '+49',  label: '+49 (Germany)' },
+  { code: '+33',  label: '+33 (France)' },
+  { code: '+81',  label: '+81 (Japan)' },
+  { code: '+86',  label: '+86 (China)' },
+  { code: '+974', label: '+974 (Qatar)' },
+  { code: '+966', label: '+966 (Saudi Arabia)' },
+  { code: '+60',  label: '+60 (Malaysia)' },
+  { code: '+64',  label: '+64 (New Zealand)' },
+  { code: '+27',  label: '+27 (South Africa)' },
+];
+
+function MobileField({ cc, number, onCCChange, onNumberChange }) {
+  return (
+    <div style={{ display: 'flex', gap: '8px' }}>
+      <select
+        value={cc}
+        onChange={e => onCCChange(e.target.value)}
+        style={{ ...selectStyle, width: '110px', flexShrink: 0, padding: '10px 28px 10px 10px', fontSize: '13px' }}
+        onFocus={e => e.target.style.borderColor = 'var(--green)'}
+        onBlur={e => e.target.style.borderColor = 'var(--border)'}
+      >
+        {CC_OPTIONS.map(o => (
+          <option key={o.code + o.label} value={o.code}>{o.code}</option>
+        ))}
+      </select>
+      <input
+        value={number}
+        onChange={e => onNumberChange(e.target.value)}
+        placeholder="Mobile number"
+        style={{ ...inputStyle, flex: 1 }}
+        onFocus={e => e.target.style.borderColor = 'var(--green)'}
+        onBlur={e => e.target.style.borderColor = 'var(--border)'}
+      />
+    </div>
+  );
+}
+
 // ── DOB Picker ────────────────────────────────────────────────────────────────
 
 function DOBPicker({ value, onChange }) {
@@ -115,7 +159,7 @@ function SkeletonRow() {
 }
 
 const EMPTY_FORM = {
-  firstName: '', lastName: '', pan: '', mobile: '',
+  firstName: '', lastName: '', pan: '', mobile: '', mobile_cc: '+91',
   email: '', date_of_birth: '', partner_id: '', family_id: '',
   kyc_status: 'pending', risk_profile: 'Moderate',
 };
@@ -129,6 +173,7 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved }) {
     firstName:     investor.first_name     || '',
     lastName:      investor.last_name      || '',
     mobile:        investor.mobile         || '',
+    mobile_cc:     investor.mobile_cc      || '+91',
     email:         investor.email          || '',
     date_of_birth: investor.date_of_birth  ? investor.date_of_birth.split('T')[0] : '',
     partner_id:    investor.partner_id     ? String(investor.partner_id) : '',
@@ -163,6 +208,7 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved }) {
         first_name:    form.firstName.trim(),
         last_name:     form.lastName.trim()  || null,
         mobile:        form.mobile.trim()    || null,
+        mobile_cc:     form.mobile_cc,
         email:         form.email.trim()     || null,
         date_of_birth: form.date_of_birth    || null,
         partner_id:    form.partner_id       ? parseInt(form.partner_id) : null,
@@ -200,7 +246,15 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved }) {
             <div><Label>First Name *</Label><input value={form.firstName} onChange={e => update('firstName', e.target.value)} style={inputStyle} {...fi} /></div>
             <div><Label>Last Name</Label><input value={form.lastName} onChange={e => update('lastName', e.target.value)} style={inputStyle} {...fi} /></div>
           </div>
-          <div><Label>Mobile</Label><input value={form.mobile} onChange={e => update('mobile', e.target.value)} style={inputStyle} {...fi} /></div>
+          <div>
+            <Label>Mobile</Label>
+            <MobileField
+              cc={form.mobile_cc}
+              number={form.mobile}
+              onCCChange={v => update('mobile_cc', v)}
+              onNumberChange={v => update('mobile', v)}
+            />
+          </div>
           <div><Label>Email</Label><input value={form.email} onChange={e => update('email', e.target.value)} style={inputStyle} {...fi} /></div>
           <div>
             <Label>Date of Birth</Label>
@@ -324,6 +378,7 @@ export default function AdminInvestors() {
         last_name:     form.lastName.trim()    || null,
         pan:           form.pan.trim().toUpperCase(),
         mobile:        form.mobile.trim()      || null,
+        mobile_cc:     form.mobile_cc,
         email:         form.email.trim()       || null,
         date_of_birth: form.date_of_birth      || null,
         partner_id:    form.partner_id         ? parseInt(form.partner_id) : null,
@@ -469,7 +524,15 @@ export default function AdminInvestors() {
                 <div><Label>First Name *</Label><input value={form.firstName} onChange={e => update('firstName', e.target.value)} style={inputStyle} {...fi} /></div>
                 <div><Label>Last Name</Label><input value={form.lastName} onChange={e => update('lastName', e.target.value)} style={inputStyle} {...fi} /></div>
                 <div><Label>PAN Number *</Label><input value={form.pan} onChange={e => update('pan', e.target.value.toUpperCase())} placeholder="ABCDE1234F" style={inputStyle} {...fi} /></div>
-                <div><Label>Mobile</Label><input value={form.mobile} onChange={e => update('mobile', e.target.value)} style={inputStyle} {...fi} /></div>
+                <div>
+                  <Label>Mobile</Label>
+                  <MobileField
+                    cc={form.mobile_cc}
+                    number={form.mobile}
+                    onCCChange={v => update('mobile_cc', v)}
+                    onNumberChange={v => update('mobile', v)}
+                  />
+                </div>
                 <div><Label>Email</Label><input value={form.email} onChange={e => update('email', e.target.value)} style={inputStyle} {...fi} /></div>
                 <div>
                   <Label>Date of Birth</Label>

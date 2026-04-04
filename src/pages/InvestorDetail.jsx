@@ -261,7 +261,7 @@ export default function InvestorDetail() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginTop: '16px' }}>
                   {[
                     { label: 'PAN',          value: investor.pan ? `${investor.pan.slice(0,3)}••••${investor.pan.slice(-2)}` : '—' },
-                    { label: 'Mobile',       value: investor.mobile || '—' },
+                    { label: 'Mobile',       value: investor.mobile ? `${investor.mobile_cc || ''} ${investor.mobile}`.trim() : '—' },
                     { label: 'Email',        value: investor.email || '—' },
                     { label: 'DOB',          value: investor.date_of_birth ? new Date(investor.date_of_birth).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—' },
                     { label: 'Partner',      value: investor.partner_name || '—' },
