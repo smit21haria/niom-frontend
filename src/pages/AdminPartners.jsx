@@ -396,6 +396,7 @@ const EMPTY_FORM = {
   tagline: '', bio: '',
   services: [],
   referredBy: '',
+  email: '', password: '',
   photoFile: null, photoPreview: null,
   logoFile: null,  logoPreview: null,
 };
@@ -509,6 +510,8 @@ export default function AdminPartners() {
       bio:        p.bio        || '',
       services:   Array.isArray(p.services) ? p.services : [],
       referredBy: p.referred_by_slug || '',
+      email:    p.email    || '',
+      password: '',           // never prefill password
       photoPreview: p.photo_url ? `${BASE}${p.photo_url}` : null,
       logoPreview:  p.logo_url  ? `${BASE}${p.logo_url}`  : null,
     });
@@ -558,6 +561,8 @@ export default function AdminPartners() {
         call_number:      form.callNumber.trim(),
         services:         form.services,
         referred_by_slug: form.referredBy || null,
+        email:    form.email.trim()  || null,
+        password: form.password      || null,
       };
       if (photo_url) payload.photo_url = photo_url;
       if (logo_url)  payload.logo_url  = logo_url;
@@ -1034,6 +1039,33 @@ export default function AdminPartners() {
                     </div>
                     <div style={{ marginTop: '12px', fontSize: '12px', color: '#9aaa9e' }}>
                       {form.services.length} of 3 selected
+                    </div>
+                  </div>
+
+                  {/* Login Credentials */}
+                  <div style={{ padding: '28px 32px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ ...tabLabel, marginBottom: '20px' }}>Login Credentials</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <Field label="Email">
+                        <input
+                          value={form.email}
+                          onChange={e => updateForm('email', e.target.value)}
+                          type="email"
+                          placeholder="partner@email.com"
+                          style={fieldInput}
+                          onFocus={fe} onBlur={fb}
+                        />
+                      </Field>
+                      <Field label={editingId ? 'New Password (leave blank to keep current)' : 'Password'}>
+                        <input
+                          value={form.password}
+                          onChange={e => updateForm('password', e.target.value)}
+                          type="password"
+                          placeholder={editingId ? 'Leave blank to keep current' : 'Set a password'}
+                          style={fieldInput}
+                          onFocus={fe} onBlur={fb}
+                        />
+                      </Field>
                     </div>
                   </div>
 
