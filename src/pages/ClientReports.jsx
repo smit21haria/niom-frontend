@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { investors, families } from '../lib/api';
+import { investors, families, getUserRole } from '../lib/api';
 
 const sectionHead = {
   fontFamily: 'var(--display-font)',
@@ -63,6 +63,7 @@ export default function ClientReports() {
   const [searching, setSearching]       = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const dropdownRef = useRef(null);
+  const isPartner = getUserRole() === 'partner';
 
   // Debounced search against real API
   useEffect(() => {
@@ -202,8 +203,8 @@ export default function ClientReports() {
                   </div>
                   <div style={{ fontSize: '11px', color: '#9aaa9e' }}>
                     {subjectType === 'investor'
-                      ? [item.pan, item.partner_name].filter(Boolean).join(' · ')
-                      : [item.head_investor_name, item.partner_name].filter(Boolean).join(' · ')
+                      ? [item.pan, ...(!isPartner && item.partner_name ? [item.partner_name] : [])].filter(Boolean).join(' · ')
+                      : [item.head_investor_name, ...(!isPartner && item.partner_name ? [item.partner_name] : [])].filter(Boolean).join(' · ')
                     }
                   </div>
                 </div>
@@ -235,7 +236,7 @@ export default function ClientReports() {
               </div>
               <div style={{ fontSize: '11px', color: '#9aaa9e' }}>
                 {subjectType === 'investor'
-                  ? [selected.pan, selected.partner_name].filter(Boolean).join(' · ')
+                  ? [selected.pan, ...(!isPartner && selected.partner_name ? [selected.partner_name] : [])].filter(Boolean).join(' · ')
                   : [selected.head_investor_name, `${selected.member_count || 0} members`].filter(Boolean).join(' · ')
                 }
               </div>
