@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { families, partners as partnersApi, formatINR } from '../lib/api';
+import { families, partners as partnersApi, formatINR, getUserRole } from '../lib/api';
 
 const tabLabel = {
   fontSize: '12px',
@@ -30,7 +30,7 @@ function SkeletonRow() {
   );
 }
 
-const columns = [
+const BASE_COLUMNS = [
   { key: 'name',               label: 'Family Name' },
   { key: 'head_investor_name', label: 'Head Investor' },
   { key: 'member_count',       label: 'Members' },
@@ -53,6 +53,8 @@ export default function Families() {
   const [sortKey, setSortKey] = useState('aum');
   const [sortDir, setSortDir] = useState('desc');
   const [page, setPage] = useState(0);
+  const isPartner = getUserRole() === 'partner';
+  const columns = BASE_COLUMNS.filter(c => !(isPartner && c.key === 'partner_name'));
 
   // Debounce search
   useEffect(() => {
@@ -60,12 +62,12 @@ export default function Families() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // Load partners for filter dropdown
   useEffect(() => {
+    if (isPartner) return;
     partnersApi.list({ limit: 100 })
       .then(r => setPartnersList(Array.isArray(r) ? r : []))
       .catch(() => {});
-  }, []);
+  }, [isPartner]);
 
   useEffect(() => { setPage(0); }, [partnerFilter]);
 
@@ -183,19 +185,21 @@ export default function Families() {
           />
         </div>
 
-        <select value={partnerFilter} onChange={e => { setPartnerFilter(e.target.value); setPage(0); }}
-          style={{
-            padding: '10px 14px', border: '1.5px solid var(--border)',
-            borderRadius: '8px', fontSize: '13px', fontFamily: 'var(--body-font)',
-            color: partnerFilter ? 'var(--charcoal)' : '#9aaa9e',
-            background: 'var(--ivory)', outline: 'none',
-            appearance: 'none', cursor: 'pointer', minWidth: '160px',
-          }}>
-          <option value="">All Partners</option>
-          {partnersList.map(p => (
-            <option key={p.id} value={p.id}>{p.fname} {p.lname}</option>
-          ))}
-        </select>
+        {!isPartner && (
+          <select value={partnerFilter} onChange={e => { setPartnerFilter(e.target.value); setPage(0); }}
+            style={{
+              padding: '10px 14px', border: '1.5px solid var(--border)',
+              borderRadius: '8px', fontSize: '13px', fontFamily: 'var(--body-font)',
+              color: partnerFilter ? 'var(--charcoal)' : '#9aaa9e',
+              background: 'var(--ivory)', outline: 'none',
+              appearance: 'none', cursor: 'pointer', minWidth: '160px',
+            }}>
+            <option value="">All Partners</option>
+            {partnersList.map(p => (
+              <option key={p.id} value={p.id}>{p.fname} {p.lname}</option>
+            ))}
+          </select>
+        )}
 
         {(searchInput || partnerFilter) && (
           <button onClick={() => { setSearchInput(''); setPartnerFilter(''); setPage(0); }} style={{
@@ -232,7 +236,7 @@ export default function Families() {
                 Array.from({ length: LIMIT }).map((_, i) => <SkeletonRow key={i} />)
               ) : sorted.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: '60px 24px', textAlign: 'center' }}>
+                  <td colSpan={isPartner ? 6 : 7} style={{ padding: '60px 24px', textAlign: 'center' }}>
                     <div style={{ fontFamily: 'var(--display-font)', fontSize: '22px', color: 'var(--green)', marginBottom: '8px' }}>
                       No families yet
                     </div>
@@ -272,9 +276,11 @@ export default function Families() {
                   <td style={{ padding: '14px 20px', fontFamily: 'var(--display-font)', fontSize: '14px', color: 'var(--charcoal)', whiteSpace: 'nowrap' }}>
                     {formatINR(f.sip_amount || 0)}
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--charcoal)', whiteSpace: 'nowrap' }}>
-                    {f.partner_name || '—'}
-                  </td>
+                  {!isPartner && (
+                    <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--charcoal)', whiteSpace: 'nowrap' }}>
+                      {f.partner_name || '—'}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { investors, partners, families } from '../lib/api';
+import { investors, partners, families, getUserRole } from '../lib/api';
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -296,7 +296,7 @@ const subSections = ['Investor List', 'Create Investor'];
 
 // ── Edit Drawer ───────────────────────────────────────────────────────────────
 
-function InvestorDrawer({ investor, livePartners, onClose, onSaved }) {
+function InvestorDrawer({ investor, livePartners, onClose, onSaved, isPartner }) {
   const [form, setForm] = useState({
     firstName:     investor.first_name     || '',
     lastName:      investor.last_name      || '',
@@ -388,13 +388,15 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved }) {
             <Label>Date of Birth</Label>
             <DOBPicker value={form.date_of_birth} onChange={v => update('date_of_birth', v)} />
           </div>
-          <div>
-            <Label>Assign to Partner</Label>
-            <select value={form.partner_id} onChange={e => handlePartnerChange(e.target.value)} style={selectStyle} onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
-              <option value="">— No partner</option>
-              {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
-            </select>
-          </div>
+          {!isPartner && (
+            <div>
+              <Label>Assign to Partner</Label>
+              <select value={form.partner_id} onChange={e => handlePartnerChange(e.target.value)} style={selectStyle} onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
+                <option value="">— No partner</option>
+                {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
+              </select>
+            </div>
+          )}
           <div>
             <Label>Assign to Family</Label>
             <select value={form.family_id} onChange={e => update('family_id', e.target.value)} disabled={!form.partner_id}
@@ -459,13 +461,15 @@ export default function AdminInvestors() {
   const [successMsg, setSuccessMsg]       = useState('');
 
   const update = (k, v) => { setForm(f => ({ ...f, [k]: v })); setCreateError(''); };
+  const isPartner = getUserRole() === 'partner';
 
   useEffect(() => {
+    if (isPartner) return;
     partners.list().then(data => {
       const all = Array.isArray(data) ? data : [];
       setLivePartners(all.filter(p => p.status === 'live'));
     }).catch(() => {});
-  }, []);
+  }, [isPartner]);
 
   const loadInvestors = useCallback(async () => {
     setLoading(true);
@@ -564,12 +568,14 @@ export default function AdminInvestors() {
                 <span style={{ ...sectionHead, fontSize: '18px', marginRight: 'auto' }}>All Investors</span>
                 <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, PAN, email…"
                   style={{ ...inputStyle, width: '220px', padding: '8px 14px', fontSize: '13px' }} {...fi} />
-                <select value={partnerFilter} onChange={e => setPartnerFilter(e.target.value)}
-                  style={{ ...selectStyle, width: '160px', padding: '8px 14px', fontSize: '13px' }}
-                  onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
-                  <option value="">All Partners</option>
-                  {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
-                </select>
+                {!isPartner && (
+                  <select value={partnerFilter} onChange={e => setPartnerFilter(e.target.value)}
+                    style={{ ...selectStyle, width: '160px', padding: '8px 14px', fontSize: '13px' }}
+                    onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
+                    <option value="">All Partners</option>
+                    {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
+                  </select>
+                )}
                 <select value={kycFilter} onChange={e => setKycFilter(e.target.value)}
                   style={{ ...selectStyle, width: '130px', padding: '8px 14px', fontSize: '13px' }}
                   onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
@@ -582,7 +588,7 @@ export default function AdminInvestors() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                   <thead>
                     <tr style={{ background: 'var(--sage)' }}>
-                      {['Name','PAN','Partner','Family','KYC','Joined','Actions'].map(h => (
+                      {['Name','PAN',...(!isPartner?['Partner']:[]),'Family','KYC','Joined','Actions'].map(h => (
                         <th key={h} style={{ padding: '12px 20px', textAlign: 'left', ...tabLabel, fontFamily: 'var(--body-font)', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -591,7 +597,7 @@ export default function AdminInvestors() {
                     {loading ? (
                       Array.from({ length: 6 }).map((_,i) => <SkeletonRow key={i} />)
                     ) : investorList.length === 0 ? (
-                      <tr><td colSpan={7} style={{ padding: '60px 24px', textAlign: 'center' }}>
+                      <tr><td colSpan={isPartner ? 6 : 7} style={{ padding: '60px 24px', textAlign: 'center' }}>
                         <div style={{ fontFamily: 'var(--display-font)', fontSize: '22px', color: 'var(--green)', marginBottom: '8px' }}>
                           {search||partnerFilter||kycFilter ? 'No results match your filters.' : 'No investors yet'}
                         </div>
@@ -613,7 +619,7 @@ export default function AdminInvestors() {
                           </div>
                         </td>
                         <td style={{ padding: '14px 20px', fontSize: '13px', color: '#8a9e96', fontFamily: 'monospace' }}>{inv.pan?inv.pan.slice(0,3)+'••••'+inv.pan.slice(-2):'—'}</td>
-                        <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{inv.partner_name||'—'}</td>
+                        {!isPartner && <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{inv.partner_name||'—'}</td>}
                         <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{inv.family_name||'—'}</td>
                         <td style={{ padding: '14px 20px' }}>
                           <span style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em', ...(kycBadge[inv.kyc_status]||kycBadge.pending) }}>
@@ -666,14 +672,16 @@ export default function AdminInvestors() {
                   <Label>Date of Birth</Label>
                   <DOBPicker value={form.date_of_birth} onChange={v => update('date_of_birth', v)} />
                 </div>
-                <div>
-                  <Label>Assign to Partner</Label>
-                  <select value={form.partner_id} onChange={e => handlePartnerChange(e.target.value)} style={selectStyle}
-                    onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
-                    <option value="">— No partner</option>
-                    {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
-                  </select>
-                </div>
+                {!isPartner && (
+                  <div>
+                    <Label>Assign to Partner</Label>
+                    <select value={form.partner_id} onChange={e => handlePartnerChange(e.target.value)} style={selectStyle}
+                      onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
+                      <option value="">— No partner</option>
+                      {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <Label>Assign to Family</Label>
                   <select value={form.family_id} onChange={e => update('family_id', e.target.value)} disabled={!form.partner_id}
@@ -721,6 +729,7 @@ export default function AdminInvestors() {
         <InvestorDrawer
           investor={editingInvestor}
           livePartners={livePartners}
+          isPartner={isPartner}
           onClose={() => setEditingInvestor(null)}
           onSaved={() => { setEditingInvestor(null); loadInvestors(); }}
         />

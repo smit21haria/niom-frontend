@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { families, partners, investors } from '../lib/api';
+import { families, partners, investors, getUserRole } from '../lib/api';
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -186,7 +186,7 @@ const subSections = ['Family List', 'Create Family'];
 
 // ── Edit / Delete Drawer ──────────────────────────────────────────────────────
 
-function FamilyDrawer({ family, livePartners, onClose, onSaved }) {
+function FamilyDrawer({ family, livePartners, onClose, onSaved, isPartner }) {
   const [loadingDetail, setLoadingDetail] = useState(true);
   const [partnerInvestors, setPartnerInvestors] = useState([]);
   const [originalMemberIds, setOriginalMemberIds] = useState([]);
@@ -300,14 +300,16 @@ function FamilyDrawer({ family, livePartners, onClose, onSaved }) {
           ) : (
             <>
               {/* Partner — read-only */}
-              <div>
-                <Label>Partner</Label>
-                <input
-                  value={family.partner_name || '—'}
-                  disabled
-                  style={{ ...inputStyle, background: 'var(--sage)', color: '#8a9e96', cursor: 'not-allowed' }}
-                />
-              </div>
+              {!isPartner && (
+                <div>
+                  <Label>Partner</Label>
+                  <input
+                    value={family.partner_name || '—'}
+                    disabled
+                    style={{ ...inputStyle, background: 'var(--sage)', color: '#8a9e96', cursor: 'not-allowed' }}
+                  />
+                </div>
+              )}
 
               {/* Members */}
               <div>
@@ -452,12 +454,15 @@ export default function AdminFamilies() {
   // Track auto-suggested name for Create form
   const prevSuggestedRef = useRef('');
 
+  const isPartner = getUserRole() === 'partner';
+
   // ── Load live partners ──────────────────────────────────────────────────────
   useEffect(() => {
+    if (isPartner) return;
     partners.list()
       .then(data => setLivePartners((Array.isArray(data) ? data : []).filter(p => p.status === 'live')))
       .catch(() => {});
-  }, []);
+  }, [isPartner]);
 
   // ── Load family list ────────────────────────────────────────────────────────
   const loadFamilies = useCallback(async () => {
@@ -522,7 +527,7 @@ export default function AdminFamilies() {
 
   // ── Create family ───────────────────────────────────────────────────────────
   const handleCreate = async () => {
-    if (!form.partner_id)                    { setCreateError('Please select a partner.'); return; }
+    if (!isPartner && !form.partner_id)       { setCreateError('Please select a partner.'); return; }
     if (form.selectedMembers.length === 0)   { setCreateError('Please add at least one member.'); return; }
     if (!form.head_investor_id)              { setCreateError('Please select a head investor.'); return; }
     if (!form.name.trim())                   { setCreateError('Family name is required.'); return; }
@@ -551,7 +556,7 @@ export default function AdminFamilies() {
 
   const fi = { onFocus: e => e.target.style.borderColor = 'var(--green)', onBlur: e => e.target.style.borderColor = 'var(--border)' };
 
-  const canSubmit = form.partner_id && form.selectedMembers.length > 0 && form.head_investor_id && form.name.trim();
+  const canSubmit = (isPartner || form.partner_id) && form.selectedMembers.length > 0 && form.head_investor_id && form.name.trim();
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -598,16 +603,18 @@ export default function AdminFamilies() {
                   style={{ ...inputStyle, width: '200px', padding: '8px 14px', fontSize: '13px' }}
                   {...fi}
                 />
-                <select
-                  value={partnerFilter}
-                  onChange={e => setPartnerFilter(e.target.value)}
-                  style={{ ...selectStyle, width: '160px', padding: '8px 14px', fontSize: '13px' }}
-                  onFocus={e => e.target.style.borderColor = 'var(--green)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border)'}
-                >
-                  <option value="">All Partners</option>
-                  {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
-                </select>
+                {!isPartner && (
+                  <select
+                    value={partnerFilter}
+                    onChange={e => setPartnerFilter(e.target.value)}
+                    style={{ ...selectStyle, width: '160px', padding: '8px 14px', fontSize: '13px' }}
+                    onFocus={e => e.target.style.borderColor = 'var(--green)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                  >
+                    <option value="">All Partners</option>
+                    {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
+                  </select>
+                )}
               </div>
 
               {/* Table */}
@@ -615,7 +622,7 @@ export default function AdminFamilies() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
                   <thead>
                     <tr style={{ background: 'var(--sage)' }}>
-                      {['Family Name', 'Head Investor', 'Members', 'AUM', 'Partner', 'Actions'].map(h => (
+                      {['Family Name', 'Head Investor', 'Members', 'AUM', ...(!isPartner ? ['Partner'] : []), 'Actions'].map(h => (
                         <th key={h} style={{ padding: '12px 20px', textAlign: 'left', ...tabLabel, fontFamily: 'var(--body-font)', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -644,7 +651,7 @@ export default function AdminFamilies() {
                         <td style={{ padding: '14px 20px', fontFamily: 'var(--display-font)', fontSize: '15px', color: 'var(--charcoal)' }}>
                           {parseFloat(f.aum) > 0 ? formatINR(f.aum) : '—'}
                         </td>
-                        <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{f.partner_name || '—'}</td>
+                        {!isPartner && <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--charcoal)' }}>{f.partner_name || '—'}</td>}
                         <td style={{ padding: '14px 20px' }}>
                           <div style={{ display: 'flex', gap: '6px' }}>
                             <button
@@ -683,7 +690,7 @@ export default function AdminFamilies() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
                 {/* Step 1 — Partner */}
-                <div>
+                {!isPartner && <div>
                   <Label>Partner *</Label>
                   <select
                     value={form.partner_id}
@@ -695,10 +702,10 @@ export default function AdminFamilies() {
                     <option value="">— Select a partner</option>
                     {livePartners.map(p => <option key={p.id} value={String(p.id)}>{p.fname} {p.lname}</option>)}
                   </select>
-                </div>
+                </div>}
 
                 {/* Step 2 — Members */}
-                <div style={{ opacity: form.partner_id ? 1 : 0.45, pointerEvents: form.partner_id ? 'auto' : 'none', transition: 'opacity 0.2s' }}>
+                <div style={{ opacity: (isPartner || form.partner_id) ? 1 : 0.45, pointerEvents: (isPartner || form.partner_id) ? 'auto' : 'none', transition: 'opacity 0.2s' }}>
                   <Label>Members *</Label>
                   {loadingInvestors ? (
                     <div style={{ fontSize: '13px', color: '#9aaa9e', padding: '10px 0' }}>Loading investors…</div>
@@ -771,6 +778,7 @@ export default function AdminFamilies() {
         <FamilyDrawer
           family={editingFamily}
           livePartners={livePartners}
+          isPartner={isPartner}
           onClose={() => setEditingFamily(null)}
           onSaved={() => { setEditingFamily(null); loadFamilies(); }}
         />
