@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { isAuthenticated } from './lib/api';
+import { isAuthenticated, getUserRole } from './lib/api';
 import Layout from './components/layout/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -15,6 +15,7 @@ import ResearchCompare from './pages/ResearchCompare';
 import ResearchCategories from './pages/ResearchCategories';
 import ResearchCalculators from './pages/ResearchCalculators';
 import AdminProfile from './pages/AdminProfile';
+import PartnerProfile from './pages/PartnerProfile';
 import AdminPartners from './pages/AdminPartners';
 import AdminInvestors from './pages/AdminInvestors';
 import AdminFamilies from './pages/AdminFamilies';
@@ -51,7 +52,9 @@ export default function App() {
           <Route path="research/categories" element={<ResearchCategories />} />
           <Route path="research/calculators" element={<ResearchCalculators />} />
           <Route path="admin-controls" element={<Navigate to="/admin-controls/profile" replace />} />
-          <Route path="admin-controls/profile" element={<AdminProfile />} />
+          <Route path="admin-controls/profile" element={
+            getUserRole() === 'partner' ? <PartnerProfile /> : <AdminProfile />
+          } />
           <Route path="admin-controls/partners" element={<AdminPartners />} />
           <Route path="admin-controls/investors" element={<AdminInvestors />} />
           <Route path="admin-controls/families" element={<AdminFamilies />} />
