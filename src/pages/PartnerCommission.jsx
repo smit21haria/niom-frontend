@@ -59,9 +59,9 @@ function SubTreeNode({ partner, allPartners, level = 0, siblingIndex = 0 }) {
   const [expanded, setExpanded] = useState(true);
   const children = allPartners.filter(p => p.referred_by_slug === partner.slug);
 
-  const isDirect = level === 0;
+  const showName = level <= 1;
 
-  const initials = isDirect
+  const initials = showName
     ? (partner.name || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
     : '•';
 
@@ -94,18 +94,18 @@ function SubTreeNode({ partner, allPartners, level = 0, siblingIndex = 0 }) {
 
         <div style={{
           width: '32px', height: '32px', borderRadius: '50%',
-          background: isDirect ? 'rgba(44,74,62,0.1)' : 'var(--sage)',
+          background: showName ? 'rgba(44,74,62,0.1)' : 'var(--sage)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '11px', fontWeight: 600,
-          color: isDirect ? 'var(--green)' : '#9aaa9e',
+          color: showName ? 'var(--green)' : '#9aaa9e',
           flexShrink: 0,
         }}>
           {initials}
         </div>
 
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '13px', fontWeight: 500, color: isDirect ? 'var(--charcoal)' : '#8a9e96' }}>
-            {isDirect ? partner.name : `Sub Partner No. ${siblingIndex + 1}`}
+          <div style={{ fontSize: '13px', fontWeight: 500, color: showName ? 'var(--charcoal)' : '#8a9e96' }}>
+            {showName ? partner.name : `Sub Partner No. ${siblingIndex + 1}`}
           </div>
           <div style={{ fontSize: '11px', color: '#8a9e96' }}>
             {investorCount} investor{investorCount !== 1 ? 's' : ''} · {aumDisplay}
@@ -357,9 +357,19 @@ export default function PartnerCommission() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-              {myDirectReferrals.map((p, idx) => (
-                <SubTreeNode key={p.id} partner={p} allPartners={mlmTree} level={0} siblingIndex={idx} />
-              ))}
+              {(() => {
+                const mySelf = mlmTree.find(p => p.slug === mySlug);
+                if (!mySelf) return null;
+                return (
+                  <SubTreeNode
+                    key={mySelf.id}
+                    partner={mySelf}
+                    allPartners={mlmTree}
+                    level={0}
+                    siblingIndex={0}
+                  />
+                );
+              })()}
             </div>
           )}
         </div>
