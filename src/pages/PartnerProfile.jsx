@@ -389,21 +389,11 @@ export default function PartnerProfile() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
           {saved && <span style={{ fontSize: '13px', color: 'var(--green)', fontWeight: 500 }}>✓ Saved successfully</span>}
-          {!editing ? (
+          {!editing && (
             <button onClick={handleEdit} style={{ padding: '10px 24px', borderRadius: '8px', background: 'var(--green)', color: 'var(--ivory)', border: 'none', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--body-font)' }}
               onMouseEnter={e => e.currentTarget.style.background = 'var(--gold)'}
               onMouseLeave={e => e.currentTarget.style.background = 'var(--green)'}
             >Edit</button>
-          ) : (
-            <>
-              <button onClick={handleSave} disabled={saving} style={{ padding: '10px 24px', borderRadius: '8px', background: saving ? '#9aaa9e' : 'var(--green)', color: 'var(--ivory)', border: 'none', fontSize: '13px', fontWeight: 500, cursor: saving ? 'default' : 'pointer', fontFamily: 'var(--body-font)' }}
-                onMouseEnter={e => { if (!saving) e.currentTarget.style.background = 'var(--gold)'; }}
-                onMouseLeave={e => { if (!saving) e.currentTarget.style.background = 'var(--green)'; }}
-              >{saving ? 'Saving...' : 'Save Changes'}</button>
-              <button onClick={handleCancel} style={{ padding: '10px 20px', borderRadius: '8px', background: 'transparent', color: '#8a9e96', border: '1.5px solid var(--border)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--body-font)' }}>
-                Cancel
-              </button>
-            </>
           )}
         </div>
       </div>
