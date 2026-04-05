@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { investors, partners, families, getUserRole } from '../lib/api';
+import { investors, partners, families, getUserRole, getPartnerId } from '../lib/api';
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -317,11 +317,12 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved, isPartner })
   const update = (k, v) => { setForm(f => ({ ...f, [k]: v })); setSaved(false); setError(''); };
 
   useEffect(() => {
-    if (!form.partner_id) { setDrawerFamilies([]); return; }
-    families.list({ partner_id: form.partner_id, limit: 100 })
+    const pid = isPartner ? getPartnerId() : form.partner_id;
+    if (!pid) { setDrawerFamilies([]); return; }
+    families.list({ partner_id: pid, limit: 100 })
       .then(data => setDrawerFamilies(data?.families || []))
       .catch(() => setDrawerFamilies([]));
-  }, [form.partner_id]);
+  }, [form.partner_id, isPartner]);
 
   const handlePartnerChange = (v) => {
     setForm(f => ({ ...f, partner_id: v, family_id: '' }));
@@ -399,8 +400,8 @@ function InvestorDrawer({ investor, livePartners, onClose, onSaved, isPartner })
           )}
           <div>
             <Label>Assign to Family</Label>
-            <select value={form.family_id} onChange={e => update('family_id', e.target.value)} disabled={!form.partner_id}
-              style={{ ...selectStyle, cursor: form.partner_id?'pointer':'not-allowed', background: form.partner_id?'#fff':'var(--sage)', color: form.partner_id?'var(--charcoal)':'#8a9e96' }}
+            <select value={form.family_id} onChange={e => update('family_id', e.target.value)} disabled={!isPartner && !form.partner_id}
+              style={{ ...selectStyle, cursor: (isPartner||form.partner_id)?'pointer':'not-allowed', background: (isPartner||form.partner_id)?'#fff':'var(--sage)', color: (isPartner||form.partner_id)?'var(--charcoal)':'#8a9e96' }}
               onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
               <option value="">— No family</option>
               {drawerFamilies.map(f => <option key={f.id} value={String(f.id)}>{f.name}</option>)}
@@ -492,11 +493,12 @@ export default function AdminInvestors() {
   useEffect(() => { loadInvestors(); }, [loadInvestors]);
 
   useEffect(() => {
-    if (!form.partner_id) { setCreateFamilies([]); return; }
-    families.list({ partner_id: form.partner_id, limit: 100 })
+    const pid = isPartner ? getPartnerId() : form.partner_id;
+    if (!pid) { setCreateFamilies([]); return; }
+    families.list({ partner_id: pid, limit: 100 })
       .then(data => setCreateFamilies(data?.families || []))
       .catch(() => setCreateFamilies([]));
-  }, [form.partner_id]);
+  }, [form.partner_id, isPartner]);
 
   const handlePartnerChange = (v) => { setForm(f => ({ ...f, partner_id: v, family_id: '' })); setCreateError(''); };
 
@@ -684,8 +686,8 @@ export default function AdminInvestors() {
                 )}
                 <div>
                   <Label>Assign to Family</Label>
-                  <select value={form.family_id} onChange={e => update('family_id', e.target.value)} disabled={!form.partner_id}
-                    style={{ ...selectStyle, cursor: form.partner_id?'pointer':'not-allowed', background: form.partner_id?'#fff':'var(--sage)', color: form.partner_id?'var(--charcoal)':'#8a9e96' }}
+                  <select value={form.family_id} onChange={e => update('family_id', e.target.value)} disabled={!isPartner && !form.partner_id}
+                    style={{ ...selectStyle, cursor: (isPartner||form.partner_id)?'pointer':'not-allowed', background: (isPartner||form.partner_id)?'#fff':'var(--sage)', color: (isPartner||form.partner_id)?'var(--charcoal)':'#8a9e96' }}
                     onFocus={e => e.target.style.borderColor='var(--green)'} onBlur={e => e.target.style.borderColor='var(--border)'}>
                     <option value="">— No family</option>
                     {createFamilies.map(f => <option key={f.id} value={String(f.id)}>{f.name}</option>)}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { families, partners, investors, getUserRole } from '../lib/api';
+import { families, partners, investors, getUserRole, getPartnerId } from '../lib/api';
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -214,9 +214,13 @@ function FamilyDrawer({ family, livePartners, onClose, onSaved, isPartner }) {
         setSelectedMembers(members);
         setOriginalMemberIds(members.map(m => m.id));
         setHeadId(detail.head_investor_id ? String(detail.head_investor_id) : '');
-        setPartnerInvestors((invData?.investors || []).map(i => ({
-          id: i.id, first_name: i.first_name, last_name: i.last_name, pan: i.pan,
-        })));
+        // Exclude investors already in OTHER families (keep those in THIS family)
+        const currentMemberIds = new Set((detail.members || []).map(m => m.id));
+        setPartnerInvestors(
+          (invData?.investors || [])
+            .filter(i => !i.family_id || currentMemberIds.has(i.id))
+            .map(i => ({ id: i.id, first_name: i.first_name, last_name: i.last_name, pan: i.pan }))
+        );
       } catch (e) {
         setError('Failed to load family details.');
       } finally {
@@ -486,23 +490,27 @@ export default function AdminFamilies() {
 
   // ── Load investors when partner changes in Create form ──────────────────────
   useEffect(() => {
-    if (!form.partner_id) {
+    const pid = isPartner ? getPartnerId() : form.partner_id;
+    if (!pid) {
       setPartnerInvestors([]);
-      setForm(f => ({ ...f, selectedMembers: [], head_investor_id: '', name: '' }));
+      if (!isPartner) setForm(f => ({ ...f, selectedMembers: [], head_investor_id: '', name: '' }));
       prevSuggestedRef.current = '';
       return;
     }
     setLoadingInvestors(true);
-    investors.list({ partner_id: form.partner_id, limit: 200 })
-      .then(data => setPartnerInvestors((data?.investors || []).map(i => ({
-        id: i.id, first_name: i.first_name, last_name: i.last_name, pan: i.pan,
-      }))))
+    investors.list({ partner_id: pid, limit: 200 })
+      .then(data => setPartnerInvestors(
+        (data?.investors || [])
+          .filter(i => !i.family_id)
+          .map(i => ({ id: i.id, first_name: i.first_name, last_name: i.last_name, pan: i.pan }))
+      ))
       .catch(() => setPartnerInvestors([]))
       .finally(() => setLoadingInvestors(false));
-    // Reset downstream fields when partner changes
-    setForm(f => ({ ...f, selectedMembers: [], head_investor_id: '', name: '' }));
-    prevSuggestedRef.current = '';
-  }, [form.partner_id]);
+    if (!isPartner) {
+      setForm(f => ({ ...f, selectedMembers: [], head_investor_id: '', name: '' }));
+      prevSuggestedRef.current = '';
+    }
+  }, [form.partner_id, isPartner]);
 
   // ── Auto-suggest family name when head changes in Create form ───────────────
   useEffect(() => {
