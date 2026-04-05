@@ -10,6 +10,7 @@ import InvestorDetail from './pages/InvestorDetail';
 import Families from './pages/Families';
 import FamilyDetail from './pages/FamilyDetail';
 import Commission from './pages/Commission';
+import PartnerCommission from './pages/PartnerCommission';
 import ResearchFunds from './pages/ResearchFunds';
 import ResearchCompare from './pages/ResearchCompare';
 import ResearchCategories from './pages/ResearchCategories';
@@ -44,7 +45,9 @@ export default function App() {
           <Route path="investors/:id" element={<InvestorDetail />} />
           <Route path="families" element={<Families />} />
           <Route path="families/:id" element={<FamilyDetail />} />
-          <Route path="commission" element={<Commission />} />
+          <Route path="commission" element={
+            getUserRole() === 'partner' ? <PartnerCommission /> : <Commission />
+          } />
           <Route path="research" element={<Navigate to="/research/funds" replace />} />
           <Route path="research/funds" element={<ResearchFunds />} />
           <Route path="research/funds/:plan_id" element={<FundDetail />} />

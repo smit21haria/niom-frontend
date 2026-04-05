@@ -360,7 +360,6 @@ export default function PartnerProfile() {
   };
 
   // In view mode, use data; in edit mode, use form
-  const d = editing ? null : data;
   const isView = !editing;
 
   if (loading) return (
