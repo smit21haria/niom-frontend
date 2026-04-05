@@ -57,6 +57,10 @@ function patch(path, body) {
   return request(path, { method: 'PATCH', body: JSON.stringify(body) });
 }
 
+function put(path, body) {
+  return request(path, { method: 'PUT', body: JSON.stringify(body) });
+}
+
 function del(path) {
   return request(path, { method: 'DELETE' });
 }
@@ -196,9 +200,11 @@ export const research = {
 // ── Commission ────────────────────────────────────────────────────────────────
 
 export const commission = {
-  summary: (month, year) => get('/api/commission/summary', { month, year }),
-  config: () => get('/api/commission/config'),
-  mlmTree: () => get('/api/commission/mlm-tree'),
+  summary:       (month, year) => get('/api/commission/summary', { month, year }),
+  config:        ()     => get('/api/commission/config'),
+  updateConfig:  (body) => put('/api/commission/config', body),
+  configHistory: ()     => get('/api/commission/config/history'),
+  mlmTree:       ()     => get('/api/commission/mlm-tree'),
 };
 
 // ── Leads ─────────────────────────────────────────────────────────────────────
