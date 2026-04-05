@@ -55,48 +55,66 @@ function SkeletonRow({ cols }) {
 }
 
 // ── Subtree MLM tree — shows only this partner's downline ─────────────────────
-function SubTreeNode({ partner, allPartners, level = 0 }) {
+function SubTreeNode({ partner, allPartners, level = 0, siblingIndex = 0 }) {
   const [expanded, setExpanded] = useState(true);
   const children = allPartners.filter(p => p.referred_by_slug === partner.slug);
 
+  const isDirect = level === 0;
+
+  const initials = isDirect
+    ? (partner.name || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : '•';
+
+  const investorCount = parseInt(partner.investor_count || 0);
+  const aum           = parseFloat(partner.aum || 0);
+
+  const aumDisplay = aum >= 1e7
+    ? `₹${(aum / 1e7).toFixed(2)} Cr`
+    : aum >= 1e5
+    ? `₹${(aum / 1e5).toFixed(2)} L`
+    : aum > 0
+    ? `₹${aum.toFixed(0)}`
+    : '₹0';
+
   return (
     <div style={{ marginLeft: level * 28 }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '10px',
-        padding: '12px 16px', background: '#fff',
-        borderRadius: '10px', border: '1px solid var(--border)',
-        marginBottom: '8px',
-        cursor: children.length ? 'pointer' : 'default',
-      }} onClick={() => children.length && setExpanded(v => !v)}>
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          padding: '12px 16px', background: '#fff',
+          borderRadius: '10px', border: '1px solid var(--border)',
+          marginBottom: '8px',
+          cursor: children.length ? 'pointer' : 'default',
+        }}
+        onClick={() => children.length && setExpanded(v => !v)}
+      >
         {children.length > 0 ? (
           <span style={{ fontSize: '10px', color: '#8a9e96', transform: expanded ? 'rotate(90deg)' : 'none', display: 'inline-block', transition: 'transform 0.2s' }}>▶</span>
         ) : <span style={{ width: '14px' }} />}
 
-        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(44,74,62,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600, color: 'var(--green)', flexShrink: 0 }}>
-          {/* Level 0 = direct referral: show initials. Level 1+ = masked */}
-          {level === 0
-            ? (partner.name || '').split(' ').map(w => w[0]).join('').slice(0, 2)
-            : '••'
-          }
+        <div style={{
+          width: '32px', height: '32px', borderRadius: '50%',
+          background: isDirect ? 'rgba(44,74,62,0.1)' : 'var(--sage)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '11px', fontWeight: 600,
+          color: isDirect ? 'var(--green)' : '#9aaa9e',
+          flexShrink: 0,
+        }}>
+          {initials}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {level === 0 ? (
-            <>
-              <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--charcoal)' }}>{partner.name}</div>
-              <div style={{ fontSize: '11px', color: '#9aaa9e' }}>{partner.arn || 'No ARN'}</div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: '14px', fontWeight: 500, color: '#8a9e96' }}>Sub-partner</div>
-              <div style={{ fontSize: '11px', color: '#c4d4d0' }}>Details hidden</div>
-            </>
-          )}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '13px', fontWeight: 500, color: isDirect ? 'var(--charcoal)' : '#8a9e96' }}>
+            {isDirect ? partner.name : `Sub Partner No. ${siblingIndex + 1}`}
+          </div>
+          <div style={{ fontSize: '11px', color: '#8a9e96' }}>
+            {investorCount} investor{investorCount !== 1 ? 's' : ''} · {aumDisplay}
+          </div>
         </div>
 
         <span style={{
-          fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '100px',
-          textTransform: 'uppercase', letterSpacing: '0.08em',
+          fontSize: '11px', fontWeight: 600, padding: '3px 8px',
+          borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.08em',
           background: partner.status === 'live' ? 'rgba(44,74,62,0.08)' : 'rgba(200,200,200,0.2)',
           color: partner.status === 'live' ? 'var(--green)' : '#8a9e96',
         }}>{partner.status}</span>
@@ -108,8 +126,14 @@ function SubTreeNode({ partner, allPartners, level = 0 }) {
         )}
       </div>
 
-      {expanded && children.map(child => (
-        <SubTreeNode key={child.id} partner={child} allPartners={allPartners} level={level + 1} />
+      {expanded && children.map((child, idx) => (
+        <SubTreeNode
+          key={child.id}
+          partner={child}
+          allPartners={allPartners}
+          level={level + 1}
+          siblingIndex={idx}
+        />
       ))}
     </div>
   );
@@ -333,8 +357,8 @@ export default function PartnerCommission() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-              {myDirectReferrals.map(p => (
-                <SubTreeNode key={p.id} partner={p} allPartners={mlmTree} level={0} />
+              {myDirectReferrals.map((p, idx) => (
+                <SubTreeNode key={p.id} partner={p} allPartners={mlmTree} level={0} siblingIndex={idx} />
               ))}
             </div>
           )}
