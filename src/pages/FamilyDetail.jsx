@@ -97,20 +97,22 @@ export default function FamilyDetail() {
   const [debtBreak, setDebtBreak] = useState(null);
   const [memberSummaries, setMemberSummaries] = useState({});
 
-  // IntersectionObserver for sticky nav
+  // Scroll spy for sticky nav
   useEffect(() => {
-    const observers = [];
-    navSections.forEach(({ id: sectionId }) => {
-      const el = document.getElementById(sectionId);
-      if (!el) return;
-      const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActiveSection(sectionId); },
-        { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
-      );
-      obs.observe(el);
-      observers.push(obs);
-    });
-    return () => observers.forEach(obs => obs.disconnect());
+    if (loading) return;
+    const handleScroll = () => {
+      const offset = 120;
+      let current = navSections[0].id;
+      for (const { id: sectionId } of navSections) {
+        const el = document.getElementById(sectionId);
+        if (!el) continue;
+        if (el.getBoundingClientRect().top <= offset) current = sectionId;
+      }
+      setActiveSection(current);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [loading]);
 
   // Load all data in parallel

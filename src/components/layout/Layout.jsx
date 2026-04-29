@@ -8,7 +8,7 @@ export default function Layout() {
       <Sidebar />
       <div style={{ marginLeft: '220px', flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <TopBar />
-        <main style={{ marginTop: '60px', padding: '40px 48px 80px', flex: 1, background: 'var(--panel-bg)', minWidth: 0, overflowX: 'hidden' }}>
+        <main style={{ marginTop: '60px', padding: '40px 48px 80px', flex: 1, background: 'var(--panel-bg)', minWidth: 0, overflow: 'clip' }}>
           <Outlet />
         </main>
       </div>
