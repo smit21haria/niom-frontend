@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:3000';
+const BASE = import.meta.env.VITE_API_URL || 'https://niom-backend.onrender.com';
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
