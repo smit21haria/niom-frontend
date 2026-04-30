@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import KPICard from '../components/ui/KPICard';
 import { partners, dashboard, formatINR } from '../lib/api';
 
+const BASE = import.meta.env.VITE_API_URL || 'https://niom-backend.onrender.com';
+
 const sectionHead = {
   fontFamily: 'var(--display-font)',
   fontSize: '22px',
@@ -189,7 +191,7 @@ export default function Partners() {
                         fontWeight: 600, color: 'var(--green)', overflow: 'hidden',
                       }}>
                         {p.photo_url
-                          ? <img src={`https://niom-backend.onrender.com${p.photo_url}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ? <img src={`${BASE}${p.photo_url}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           : (p.fname?.[0] || '') + (p.lname?.[0] || '')
                         }
                       </div>

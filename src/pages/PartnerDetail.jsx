@@ -5,6 +5,8 @@ import DonutChart from '../components/ui/DonutChart';
 import AreaBarChart from '../components/ui/AreaBarChart';
 import { partners, investors, dashboard, formatINR } from '../lib/api';
 
+const BASE = import.meta.env.VITE_API_URL || 'https://niom-backend.onrender.com';
+
 const sectionHead = {
   fontFamily: 'var(--display-font)',
   fontSize: '22px',
@@ -117,7 +119,7 @@ export default function PartnerDetail() {
             fontWeight: 600, color: 'var(--green)', overflow: 'hidden',
           }}>
             {partner.photo_url
-              ? <img src={`https://niom-backend.onrender.com${partner.photo_url}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ? <img src={`${BASE}${partner.photo_url}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : (partner.fname?.[0] || '') + (partner.lname?.[0] || '')}
           </div>
 
